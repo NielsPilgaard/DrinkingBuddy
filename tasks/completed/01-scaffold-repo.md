@@ -1,9 +1,21 @@
 ---
 title: Scaffold repo skeleton
-status: pending
-last_updated: 2026-07-10
+status: in-progress
+last_updated: 2026-07-13
 depends_on: docs/prd.md, docs/tech-stack.md
 ---
+
+## Progress (2026-07-13)
+
+Done:
+- `/backend`: FastAPI app (`app/main.py`, `routers/health.py`, `config.py`), `pyproject.toml`, `Dockerfile`, `docker-compose.yml` (api+postgres+redis+coturn), `.env.example`, Alembic wired (`alembic.ini`, `alembic/env.py`, empty initial migration `b0153df16b06_initial.py`).
+- Verified: `docker compose up -d --build` brings up all 4 containers; `curl localhost:8000/health` → `200 {"status":"ok"}`; `alembic upgrade head` applied cleanly against dockerized Postgres.
+- `/app`: Expo TypeScript app scaffolded (`create-expo-app` blank-typescript), stripped template noise (its own AGENTS.md/CLAUDE.md/.claude/LICENSE — unrelated to this repo's conventions). `App.tsx` calls `EXPO_PUBLIC_API_URL` + `/health`, renders ok/error state. `eas.json` added (dev/preview/production profiles). `tsc --noEmit` clean.
+- Root `.gitignore` covers Python + Node/Expo/RN artifacts. Root `README.md` already matched target layout (pre-existing).
+
+Not yet done:
+- Manual verification of Expo app on simulator/device (dev server smoke test was interrupted mid-session — needs a real run + visual confirm of health-check screen, per "Done when" criteria).
+- Not yet committed to git.
 
 ## Goal
 
