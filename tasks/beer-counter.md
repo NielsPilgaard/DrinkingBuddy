@@ -1,0 +1,1 @@
+increment drink count when done with a drink. not automatic, should probably spawn an animation.

@@ -1,0 +1,1 @@
+get a random conversation starter. seed via llm probably
