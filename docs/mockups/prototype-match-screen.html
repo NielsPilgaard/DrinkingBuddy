@@ -1,0 +1,410 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway UI mockup, not production code.
+  Question: what should the core "match" screen (PRD §4 instant-connect loop) look like?
+  Settled on full-bleed video w/ fly-in chat drawer (was variant A of 3). B and C dropped.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DrinkingBuddy — match screen prototype</title>
+<style>
+  :root {
+    --bg: #0e0e12;
+    --panel: #17171d;
+    --panel2: #1f1f28;
+    --accent: #ffb020;
+    --accent2: #ff6b6b;
+    --text: #f2f2f5;
+    --muted: #8a8a96;
+    --green: #38d39f;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #050506;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    height: 100%;
+  }
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 8px solid #222;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .notch {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 150px; height: 24px;
+    background: #000;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    z-index: 50;
+  }
+  .note {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--muted); background: #1a1a1f;
+    padding: 6px 14px; border-radius: 999px; border: 1px solid #333;
+  }
+
+  /* ================= Screen layout: flex column, not absolute soup ================= */
+  .screen {
+    flex: 1; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: none;
+  }
+
+  .video-remote {
+    flex: 1;
+    background: linear-gradient(160deg, #2b2140, #191320 70%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    animation: fade-in-remote 0.6s ease;
+    transition: flex-basis 0.32s cubic-bezier(.2,.9,.3,1), height 0.32s cubic-bezier(.2,.9,.3,1);
+    min-height: 0;
+  }
+  @keyframes fade-in-remote {
+    from { opacity: 0; transform: scale(1.04); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .avatar-placeholder {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: #35304a; display:flex; align-items:center; justify-content:center;
+    font-size: 36px;
+  }
+  .scrim-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+    z-index: 5; pointer-events: none;
+  }
+  .scrim-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 90px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.5), rgba(0,0,0,0));
+    z-index: 5; pointer-events: none;
+  }
+  .top-bar {
+    position: absolute; top: 36px; left: 16px; right: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 10;
+  }
+  .top-bar-left { display: flex; align-items: center; gap: 8px; }
+  .pill { background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); padding: 7px 13px; border-radius: 999px; font-size: 12px; display:flex; align-items:center; gap:6px;}
+  .dot { width:7px; height:7px; border-radius:50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .menu-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); color: var(--text); font-size: 16px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .menu-btn .beer-count {
+    position: absolute; bottom: -6px; right: -8px;
+    background: var(--accent); color: #1a1200; font-size: 10px; font-weight: 700;
+    border-radius: 999px; padding: 1px 5px; border: 2px solid #050506; line-height: 1.3;
+  }
+  .self-pip {
+    position: absolute; top: 90px; right: 16px;
+    width: 78px; height: 112px; border-radius: 16px;
+    background: #26203a; border: 2px solid rgba(255,255,255,0.18);
+    display: flex; align-items:center; justify-content:center; font-size: 20px;
+    z-index: 10; box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    transition: opacity 0.2s ease;
+  }
+
+  /* --- bottom bar: real flex row, fixed height, lives below the video pane --- */
+  .bottom-bar {
+    flex-shrink: 0;
+    background: #0b0b0e;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 10px;
+    border-top: 1px solid #1c1c22;
+  }
+  .controls-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ctrl-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--panel2); color: var(--text); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ctrl-btn.off { background: rgba(255,60,60,0.18); color: #ff8f8f; }
+  .chat-fab {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--panel2); color: var(--text); font-size: 16px;
+    flex-shrink: 0; position: relative;
+  }
+  .chat-fab .unread {
+    position: absolute; top: -2px; right: -2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent2); border: 2px solid #0b0b0e;
+  }
+  .skip-btn {
+    flex: 1;
+    background: var(--accent); color: #1a1200; font-weight: 700;
+    padding: 12px 20px; border-radius: 999px; border: none; font-size: 14px;
+    box-shadow: 0 6px 18px rgba(255,176,32,0.3);
+  }
+
+  /* --- sheet open state: shrink video, hide overlay chrome, show whichever sheet is active --- */
+  .screen.sheet-open .video-remote { flex: 0 0 200px; }
+  .screen.sheet-open .self-pip { opacity: 0; pointer-events: none; }
+  .screen.sheet-open .bottom-bar { display: none; }
+
+  .drawer {
+    flex-shrink: 0;
+    height: 0;
+    background: var(--panel);
+    border-radius: 24px 24px 0 0;
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: height 0.32s cubic-bezier(.2,.9,.3,1);
+  }
+  .screen[data-sheet="chat"] .drawer.chat-sheet { height: 520px; border-top: 1px solid #2a2a35; }
+  .screen[data-sheet="menu"] .drawer.menu-sheet { height: 520px; border-top: 1px solid #2a2a35; }
+
+  /* --- menu sheet contents --- */
+  .menu-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .menu-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel2); border: 1px solid #2a2a35; border-radius: 16px;
+    padding: 14px; text-align: left;
+  }
+  .menu-item .icon {
+    width: 42px; height: 42px; border-radius: 12px; background: #2a2a38;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+  }
+  .menu-item .body { flex: 1; }
+  .menu-item .title { font-size: 14px; font-weight: 600; }
+  .menu-item .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .menu-item .chevron { color: var(--muted); font-size: 16px; }
+  .menu-item.beer-item .icon { background: rgba(255,176,32,0.18); }
+  .menu-item.beer-item .count { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .beer-stepper { display: flex; align-items: center; gap: 10px; }
+  .beer-stepper button {
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: #33333f; color: var(--text); font-size: 14px;
+  }
+
+  .drawer-header {
+    position: relative;
+    padding: 14px 14px 10px; flex-shrink: 0; border-bottom: 1px solid #26262f;
+  }
+  .drawer-handle {
+    width: 36px; height: 4px; border-radius: 999px; background: #3a3a45;
+    margin: 0 auto 10px;
+  }
+  .drawer-title-row { display: flex; align-items: center; justify-content: space-between; }
+  .drawer-title { font-size: 13px; color: var(--muted); }
+  .drawer-close { background: none; border: none; color: var(--muted); font-size: 20px; padding: 4px 8px; }
+
+  .drawer-msgs {
+    flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .dmsg { max-width: 78%; font-size: 13.5px; line-height: 1.35; }
+  .dmsg .bubble { padding: 9px 13px; border-radius: 16px 16px 16px 4px; background: var(--panel2); }
+  .dmsg.me { align-self: flex-end; }
+  .dmsg.me .bubble { background: var(--accent); color: #1a1200; border-radius: 16px 16px 4px 16px; font-weight: 500; }
+  .dmsg.them { align-self: flex-start; }
+  .dmsg .img-bubble {
+    width: 170px; height: 110px; border-radius: 16px 16px 16px 4px;
+    background: linear-gradient(135deg,#3a2b55,#1f1a2e); display:flex; align-items:center; justify-content:center;
+    font-size: 24px;
+  }
+  .dmsg.me .img-bubble { border-radius: 16px 16px 4px 16px; }
+  .dmsg .link-bubble {
+    background: var(--panel2); border: 1px solid #2f2f3a; border-radius: 16px 16px 16px 4px;
+    padding: 10px 12px; display: flex; gap: 10px; align-items: center;
+  }
+  .dmsg .link-bubble .thumb { width: 38px; height: 38px; border-radius: 8px; background: #3a3350; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .dmsg .link-bubble .meta { font-size: 11.5px; color: var(--muted); }
+  .dmsg .link-bubble .url { font-size: 12.5px; color: var(--text); font-weight: 500; }
+
+  .drawer-input-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0; border-top: 1px solid #26262f;
+  }
+  .attach-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--panel2); border: none; color: var(--muted); font-size: 16px; flex-shrink: 0;
+  }
+  .drawer-input {
+    flex: 1; background: var(--panel2); border: 1px solid #2f2f3a; border-radius: 999px;
+    padding: 10px 15px; color: var(--text); font-size: 13.5px; min-width: 0;
+  }
+  .send-fab {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--accent); color: #1a1200; font-size: 15px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="note">Prototype — match/in-call screen. Not production.</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+
+    <div class="screen" id="screen">
+      <div class="video-remote">
+        <div class="avatar-placeholder">🧑</div>
+        <div class="scrim-top"></div>
+        <div class="scrim-bottom"></div>
+        <div class="top-bar">
+          <div class="top-bar-left">
+            <div class="pill"><span class="dot"></span> Connected · 03:12</div>
+            <div class="pill">🌐 EN · 🍺</div>
+          </div>
+          <button class="menu-btn" id="menuOpenBtn">☰<span class="beer-count">3</span></button>
+        </div>
+        <div class="self-pip">🙂</div>
+      </div>
+
+      <div class="bottom-bar">
+        <div class="controls-row">
+          <button class="ctrl-btn">🎤</button>
+          <button class="ctrl-btn off">📷</button>
+          <button class="chat-fab" id="chatOpenBtn">💬<span class="unread"></span></button>
+          <button class="skip-btn">Skip ⏭</button>
+        </div>
+      </div>
+
+      <div class="drawer chat-sheet">
+        <div class="drawer-header">
+          <div class="drawer-handle"></div>
+          <div class="drawer-title-row">
+            <div class="drawer-title">💬 Chat · Anders</div>
+            <button class="drawer-close chat-close">︿</button>
+          </div>
+        </div>
+        <div class="drawer-msgs">
+          <div class="dmsg them"><div class="bubble">skål! 🍻 rough week?</div></div>
+          <div class="dmsg me"><div class="bubble">you have no idea 😅</div></div>
+          <div class="dmsg them"><div class="bubble">same. look at this view from earlier</div></div>
+          <div class="dmsg them"><div class="img-bubble">🏙️</div></div>
+          <div class="dmsg me"><div class="bubble">nice! reminds me of this playlist</div></div>
+          <div class="dmsg me">
+            <div class="link-bubble">
+              <div class="thumb">🎵</div>
+              <div>
+                <div class="url">open.spotify.com</div>
+                <div class="meta">Friday Night Wind-down</div>
+              </div>
+            </div>
+          </div>
+          <div class="dmsg them"><div class="bubble">sending 👀</div></div>
+        </div>
+        <div class="drawer-input-row">
+          <button class="attach-btn">📎</button>
+          <input class="drawer-input" placeholder="Message...">
+          <button class="send-fab">➤</button>
+        </div>
+      </div>
+
+      <div class="drawer menu-sheet">
+        <div class="drawer-header">
+          <div class="drawer-handle"></div>
+          <div class="drawer-title-row">
+            <div class="drawer-title">☰ Menu</div>
+            <button class="drawer-close menu-close">︿</button>
+          </div>
+        </div>
+        <div class="menu-list">
+          <div class="menu-item beer-item">
+            <div class="icon">🍺</div>
+            <div class="body">
+              <div class="title">Beer counter</div>
+              <div class="subtitle">Track drinks this session</div>
+            </div>
+            <div class="beer-stepper">
+              <button id="beerMinus">−</button>
+              <span class="count" id="beerCount">3</span>
+              <button id="beerPlus">+</button>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div class="icon">🎮</div>
+            <div class="body">
+              <div class="title">Mini games</div>
+              <div class="subtitle">Trivia, Would You Rather, Never Have I Ever</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="menu-item">
+            <div class="icon">🎲</div>
+            <div class="body">
+              <div class="title">Icebreaker</div>
+              <div class="subtitle">Get a random conversation starter</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="menu-item">
+            <div class="icon">🚩</div>
+            <div class="body">
+              <div class="title">Report</div>
+              <div class="subtitle">Flag this match</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="menu-item">
+            <div class="icon">🚫</div>
+            <div class="body">
+              <div class="title">Block</div>
+              <div class="subtitle">Never match with this person again</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const screen = document.getElementById('screen');
+
+  function openSheet(name) {
+    screen.classList.add('sheet-open');
+    screen.setAttribute('data-sheet', name);
+  }
+  function closeSheet() {
+    screen.classList.remove('sheet-open');
+    screen.removeAttribute('data-sheet');
+  }
+
+  document.getElementById('chatOpenBtn').addEventListener('click', () => openSheet('chat'));
+  document.getElementById('menuOpenBtn').addEventListener('click', () => openSheet('menu'));
+  document.querySelector('.chat-close').addEventListener('click', closeSheet);
+  document.querySelector('.menu-close').addEventListener('click', closeSheet);
+
+  const beerCountEl = document.getElementById('beerCount');
+  const beerBadge = document.querySelector('.menu-btn .beer-count');
+  let beerCount = 3;
+  document.getElementById('beerPlus').addEventListener('click', () => {
+    beerCount++;
+    beerCountEl.textContent = beerCount;
+    beerBadge.textContent = beerCount;
+  });
+  document.getElementById('beerMinus').addEventListener('click', () => {
+    beerCount = Math.max(0, beerCount - 1);
+    beerCountEl.textContent = beerCount;
+    beerBadge.textContent = beerCount;
+  });
+</script>
+
+</body>
+</html>
