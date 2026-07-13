@@ -1,0 +1,1 @@
+how do we get a generated api client in our react native app?
