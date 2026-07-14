@@ -24,6 +24,8 @@ Migrations (Alembic):
 docker compose exec api alembic upgrade head
 ```
 
+Running the API without Docker (e.g. for client codegen): see [docs/local_dev.md](docs/local_dev.md).
+
 ## Mobile app (`/app`)
 
 Expo (React Native, TypeScript).

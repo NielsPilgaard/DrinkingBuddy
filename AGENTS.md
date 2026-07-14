@@ -6,6 +6,7 @@ Chat-roulette-style app, random 1:1 pairing for virtual hangout over a drink. iO
 
 - `docs/prd.md` — product spec, source of truth for scope/behavior.
 - `docs/tech-stack.md` — stack decisions.
+- `docs/local_dev.md` — local dev setup (dependency managers, running services outside Docker).
 - `tasks/01-scaffold-repo.md` — current task: repo skeleton.
 - `docs/mockups/prototype-match-screen.html` — throwaway UI mockup of in-call screen (full-bleed video + fly-in chat/menu drawer). Not production code.
 
@@ -63,3 +64,4 @@ Current task scope is skeleton only: no auth, no matching/signaling logic, no He
 - Treat `docs/prd.md` as authoritative for product behavior; `docs/tech-stack.md` for stack/infra choices. Don't re-derive decisions already settled there — link back instead of restating.
 - Files under `docs/mockups/` are throwaway prototypes (see HTML comment headers), not implementation references for exact code structure.
 - Task files in `tasks/` define scope boundaries explicitly (see "Explicitly out of scope" sections) — respect them, don't pull forward later-task work.
+- Local dev setup (backend `uv` usage, running services outside Docker) — see `docs/local_dev.md`.
