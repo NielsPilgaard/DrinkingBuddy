@@ -24,13 +24,20 @@ Cold start: no match within ~20-30s → prompt opt-in widen search. Never silent
 
 Language (self-declared), drink type (alcoholic/non-alcoholic), location (broad self-declared country/region, no GPS).
 
-Deferred: gender filter, age-range filter, group/open-room (v1.1), browser client, notifications, monetization, ID-verified age gate, proactive AI moderation (required pre-public-launch, not MVP).
+Deferred: gender filter, age-range filter, group/open-room (v1.1), browser client, notifications, monetization, proactive AI moderation (required pre-public-launch, not MVP), Nordic eID/EU wallet integration (not before 2027).
+
+## Launch markets
+
+**Denmark only at MVP, not global, not "Nordics-first."** Norway/Sweden ruled out by alcohol-marketing law (Alkoholloven §9-2, Alkohollagen); Finland excluded too — no legal review done for it yet. Any new market needs its own alcohol-marketing + age-verification legal check before adding — see PRD §3, §8, §9.
 
 ## Identity & safety
 
-- Lightweight accounts required (email/phone + OTP/magic-link or email+password, no full-anon mode). 18+, self-declared birthdate, no ID check at MVP.
+- Lightweight accounts required (email/phone + OTP/magic-link or email+password, no full-anon mode). Signup: 18+, self-declared birthdate, no verification tax (PRD §8).
+- Webcam access gated on real age verification (both matched parties), via **Didit** (selfie + liveness age estimation, CPR passthrough for DK) — audio/text stay open to any signed-up user, unverified or not. Details + cost-control (spend cap, waitlist-not-block, rate limits): `tasks/10-age-verification.md`, PRD §8.
 - Reactive report+block during/after calls. Auto-suspend (e.g. 24h) after N reports in time window, pending manual review.
 - Fast-follow before public launch: proactive AI nudity detection (frame sampling). Not MVP-day-one but must be roadmapped.
+- CSAM detection is a separate legal/reporting workstream from report+block — `tasks/11-csam-reporting.md`, PRD §9.
+- Alcohol-marketing law (Norway/Sweden) needs review before those markets go live — `tasks/12-alcohol-marketing-review.md`, PRD §9.
 
 ## Success metric
 
