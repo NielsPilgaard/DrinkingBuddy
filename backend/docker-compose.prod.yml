@@ -1,0 +1,134 @@
+x-loki-logging: &loki-logging
+  driver: loki
+  options:
+    loki-url: "http://localhost:3100/loki/api/v1/push"
+    loki-retries: "3"
+    loki-batch-size: "400"
+
+services:
+  migrate:
+    build: .
+    command: alembic upgrade head
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      otel-lgtm:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *loki-logging
+    networks:
+      - dokploy-network
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.drinkingbuddy-api.rule: "Host(`api.${DOMAIN}`)"
+      traefik.http.routers.drinkingbuddy-api.entrypoints: "websecure"
+      traefik.http.routers.drinkingbuddy-api.tls.certResolver: "letsencrypt"
+      traefik.http.services.drinkingbuddy-api.loadbalancer.server.port: "8000"
+      # WebSocket signaling shares the API's HTTP(S) router/port — Traefik upgrades
+      # the connection automatically, no separate router needed.
+
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - grafana_data:/data
+    networks:
+      - dokploy-network
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.drinkingbuddy-grafana.rule: "Host(`grafana.${DOMAIN}`)"
+      traefik.http.routers.drinkingbuddy-grafana.entrypoints: "websecure"
+      traefik.http.routers.drinkingbuddy-grafana.tls.certResolver: "letsencrypt"
+      traefik.http.routers.drinkingbuddy-grafana.middlewares: "drinkingbuddy-grafana-auth"
+      traefik.http.services.drinkingbuddy-grafana.loadbalancer.server.port: "3000"
+      # htpasswd string: generate with `openssl passwd -apr1`, escape `$` as `$$` in this file.
+      traefik.http.middlewares.drinkingbuddy-grafana-auth.basicauth.users: "${GRAFANA_BASICAUTH_USERS}"
+
+  postgres:
+    image: postgres:17-alpine
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *loki-logging
+    networks:
+      - dokploy-network
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *loki-logging
+    networks:
+      - dokploy-network
+
+  coturn:
+    image: coturn/coturn:latest
+    env_file:
+      - .env
+    command: >
+      -n
+      --listening-port=3478
+      --realm=${DOMAIN}
+      --use-auth-secret
+      --static-auth-secret=${COTURN_SECRET}
+      --no-cli
+      --external-ip=${COTURN_PUBLIC_IP}
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49152-49172:49152-49172/udp"
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -an | grep 3478 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *loki-logging
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  postgres_data:
+  grafana_data:

@@ -1,4 +1,25 @@
+x-loki-logging: &loki-logging
+  driver: loki
+  options:
+    loki-url: "http://localhost:3100/loki/api/v1/push"
+    loki-retries: "3"
+    loki-batch-size: "400"
+
 services:
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    ports:
+      - "3000:3000"   # Grafana UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "3100:3100"   # Loki push API (for docker loki logging driver)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   migrate:
     build: .
     command: alembic upgrade head
@@ -23,6 +44,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      otel-lgtm:
+        condition: service_healthy
     volumes:
       - ./app:/srv/app
       - ./alembic:/srv/alembic
@@ -32,6 +55,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: *loki-logging
 
   postgres:
     image: postgres:17-alpine
@@ -50,6 +74,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *loki-logging
 
   redis:
     image: redis:7-alpine
@@ -60,6 +85,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *loki-logging
 
   mailpit:
     image: axllent/mailpit:latest
@@ -92,6 +118,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *loki-logging
 
 volumes:
   postgres_data:
