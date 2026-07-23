@@ -17,8 +17,10 @@ Tracking file for PRD §13 parking-lot items — explicitly out of scope for MVP
 - [ ] Browser/desktop client — only worth doing early if a single cross-platform tech with full webcam/mic control is excellent; otherwise after mobile MVP validated (PRD §3).
 - [ ] Push notifications — nothing meaningful to notify about until retention data shows drop-off points (PRD §11).
 - [ ] Monetization (ads / subscriptions / paid filters) — validate retention first, no payment infra pre-PMF (PRD §10).
-- [ ] ID-verified age gate — revisit only if abuse data demands stronger verification than self-declared birthdate (PRD §8).
 - [ ] Precise GPS-based location matching — self-declared region chosen deliberately for safety + avoiding early-pool fragmentation (PRD §5); revisit only with real scale.
+- [ ] Nordic eID (MitID/BankID/mobiilivarmenne) and EU AltID/EUDI wallet integration for age verification — not before 2027, Didit covers verification at launch instead (`tasks/10-age-verification.md`, PRD §8).
+- [ ] Markets outside Denmark — Norway/Sweden ruled out by alcohol-marketing law, others need per-country legal review before adding (PRD §3). Not "Nordics-first" — MVP is Denmark-only.
+- [ ] Non-alcohol variant ("HydrationBuddy") for markets with alcohol-advertising restrictions (Norway/Sweden) — revisit only if DrinkingBuddy hits product-market fit.
 
 ## Explicitly out of scope
 
