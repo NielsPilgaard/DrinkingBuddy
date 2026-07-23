@@ -1,7 +1,7 @@
 ---
 title: PRD — DrinkingBuddy (working name)
 status: draft
-last_updated: 2026-07-10
+last_updated: 2026-07-23
 owners: Niels (eng), Christian (vision/QA/marketing)
 ---
 
@@ -24,6 +24,12 @@ People get bored/lonely, want casual company and a drink, but going out is impra
 
 - **iOS + Android simultaneously**, via cross-platform framework (React Native or Flutter — tech stack decision separate from PRD). No sequential single-platform launch: this is a matching app, splitting the pool by launching one platform first directly hurts match quality/wait time on both.
 - **Browser/desktop**: explicitly deferred. Only worth doing early if a single cross-platform tech (app+web+desktop) with full webcam/mic control exists and is excellent — otherwise browser comes after mobile MVP is validated.
+
+### Launch geography
+
+- **Denmark only at MVP.** Norway and Sweden have anti-alcohol-promotion advertising laws (Alkoholloven / Alkohollagen) that create real legal exposure for an app framed around drinking-as-social-ritual — ruled out for initial launch, not "Nordics-first," not "later." Finland not included either — no legal review done for it yet, don't assume it's clear.
+- Small single-country pool is an accepted tradeoff at MVP (matches existing PRD stance that early pool size is secondary to validating the core loop).
+- Expanding to another country requires a per-country legal check on alcohol-marketing/advertising rules (and any local age-verification regulation, §8) before that market is added — not an assumed rollout. "Global"/multi-country is a post-PMF roadmap item, not a v1 target.
 
 ## 4. Core loop (MVP)
 
@@ -62,13 +68,20 @@ Ship at MVP:
 ## 8. Age gate
 
 - **18+ only.**
-- Enforcement: **self-declared birthdate** at signup, no ID verification for MVP. Matches industry-standard MVP bar (e.g. Tinder). ID verification is expensive/slow to integrate and hurts signup conversion — revisit only if abuse data demands stronger verification.
+- **Signup**: self-declared birthdate, no verification tax at account creation. Matches industry-standard MVP bar (e.g. Tinder) — keeps signup friction low.
+- **Webcam access**: gated on real age verification, both matched parties must be verified before video unlocks for that pair. Audio + text remain available to any signed-up self-declared-18+ user, unverified or not (PRD §4 — video is optional, so this doesn't block the core loop). Reasoning: regulators (UK OSA, EU DSA) treat live video/image contact with strangers as the named high-risk surface — not audio or text — so verification cost/friction is concentrated exactly there. Tracked in `tasks/10-age-verification.md`.
+- Verification vendor: **Didit** (Age Estimation product — selfie + liveness, ~$0.10/check, adaptive ID-verify fallback for borderline cases), plus CPR-register passthrough for Denmark. No per-country eID (MitID/BankID) integration at launch — cost was confirmed cheap (~$0.04-0.15/verification via Idura/Criipto) but ruled out as more integration investment than the team wants to take on now. Revisit Nordic eID and the EU's AltID/EUDI wallet (Danish pilot, ships spring 2026, not yet open to private relying parties) once mature — not before 2027.
+- Mismatch handling: if either matched party is unverified, webcam stays off for both; unverified party gets an in-call prompt to verify.
+- Cost control: hard monthly cap on verification-vendor spend with 50/80/100% budget alerts. Users who hit the cap go on a **waitlist** (not blocked/errored) and get a welcome email when next month's quota opens. Rate-limit verification attempts per-user and per-IP/device against bot abuse.
 
 ## 9. Moderation & safety
 
 - **MVP**: reactive **report + block** button available during/after every call.
 - **Enforcement mechanism**: **auto-suspend** (e.g. 24h) after N reports (e.g. 3) within a time window, pending manual review — not a pure manual-review queue. With no proactive detection at MVP, reports are the only signal; a 2-person team can't guarantee fast manual review, so an automatic circuit breaker is required to stop repeat bad actors between reports and human review.
 - **Required fast-follow before public launch** (not MVP-day-one, but not "later, maybe" either): **proactive AI nudity/inappropriate-content detection** via frame sampling (e.g. AWS Rekognition or equivalent). This is the exact gap that got Omegle shut down and Chatroulette regulated — must be roadmapped explicitly, budgeted, and shipped before any public/scaled launch.
+- **CSAM handling is a separate legal workstream from user-facing report/block.** When CSAM specifically is flagged (by report or, later, the AI detector), the company has its own mandatory-reporting duty (e.g. NCMEC, Danish straffelov) distinct from the auto-suspend circuit breaker above — needs its own incident-response runbook (evidence preservation minimums, reporting channel, do-not-locally-view policy). Tracked in `tasks/11-csam-reporting.md`.
+- **Alcohol-marketing law note**: Norway (Alkoholloven §9-2) and Sweden (Alkohollagen) restrict alcohol marketing heavily enough that both are excluded from MVP launch entirely (§3), not just "needs review" — app name/branding/store listing would need dedicated legal review before either market could ever go live. Any future market beyond Denmark needs the same check before launch, not just these two. Tracked in `tasks/12-alcohol-marketing-review.md`.
+- **Chat safety filters (MVP)**: server-side keyword/pattern matching over in-call text chat, checking for three trigger categories — (1) proposing to meet in person, (2) an age-disclosure exchange resolving to under-18, (3) sharing external contact info (social handles, phone number). A match silently flags the message + call/user context into the same moderation queue as report/block (§9 above) — no in-chat warning shown, no auto-suspend from a filter hit alone (avoids tipping off bad actors, avoids false-positive friction). Requires text chat to be server-relayed rather than pure P2P WebRTC datachannel, since the server must see plaintext to filter it — see `tasks/04-webrtc-signaling.md` note and `tasks/13-chat-safety-filters.md`.
 
 ## 10. Monetization
 
@@ -94,5 +107,6 @@ Note on call costs: video calls are not literally free infra-wise even though no
 - Push notifications
 - Any monetization (ads, subscriptions, paid filters)
 - Proactive AI moderation (required pre-public-launch, but not MVP-day-one)
-- ID-verified age gate
 - Precise GPS-based location matching
+- Nordic eID (MitID/BankID/mobiilivarmenne) and EU AltID/EUDI wallet integration for age verification — revisit once mature (not before 2027), Didit covers verification at launch instead (§8)
+- Markets outside Denmark — Norway/Sweden ruled out by alcohol-marketing law, others need per-country legal review before adding, see §3
