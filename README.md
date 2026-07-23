@@ -26,6 +26,14 @@ docker compose exec api alembic upgrade head
 
 Running the API without Docker (e.g. for client codegen): see [docs/local_dev.md](docs/local_dev.md).
 
+### Observability
+
+Traces, metrics, and logs export via OTLP to a local [grafana/otel-lgtm](https://github.com/grafana/docker-otel-lgtm) container (started by `docker compose up`). Grafana UI: `localhost:3000` (default login `admin`/`admin`).
+
+Container stdout logs (Postgres, Redis, coturn, API) ship to Loki via the Docker Loki logging driver — requires a one-time host plugin install, see [docs/deploy.md](docs/deploy.md).
+
+Set `OTEL_ENABLED=false` in `.env` to disable instrumentation entirely (e.g. for lightweight local runs).
+
 ## Mobile app (`/app`)
 
 Expo (React Native, TypeScript).
