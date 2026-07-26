@@ -28,11 +28,11 @@ Deferred: gender filter, age-range filter, group/open-room (v1.1), browser clien
 
 ## Launch markets
 
-**Denmark only at MVP, not global, not "Nordics-first."** Norway/Sweden ruled out by alcohol-marketing law (Alkoholloven §9-2, Alkohollagen); Finland excluded too — no legal review done for it yet. Any new market needs its own alcohol-marketing + age-verification legal check before adding — see PRD §3, §8, §9.
+**Denmark only at MVP.** Any expansion beyond Denmark is post-MVP and requires its own alcohol-marketing + age-verification legal check before adding — see PRD §3, §8, §9 (authoritative).
 
 ## Identity & safety
 
-- Lightweight accounts required (email/phone + OTP/magic-link or email+password, no full-anon mode). Signup: 18+, self-declared birthdate, no verification tax (PRD §8).
+- Lightweight accounts required (email + OTP/magic-link, no password, no full-anon mode). Signup: 18+, self-declared birthdate, no verification tax (PRD §7, §8).
 - Webcam access gated on real age verification (both matched parties), via **Didit** (selfie + liveness age estimation, CPR passthrough for DK) — audio/text stay open to any signed-up user, unverified or not. Details + cost-control (spend cap, waitlist-not-block, rate limits): `tasks/10-age-verification.md`, PRD §8.
 - Reactive report+block during/after calls. Auto-suspend (e.g. 24h) after N reports in time window, pending manual review.
 - Fast-follow before public launch: proactive AI nudity detection (frame sampling). Not MVP-day-one but must be roadmapped.
@@ -54,7 +54,7 @@ North star: D7 retention. Secondary: avg call duration.
 | Matching queue state | Redis (ephemeral) |
 | TURN/STUN | Self-hosted coturn (~15-20% of calls need TURN relay) |
 | Hosting | Single Hetzner VPS, Docker Compose |
-| Auth | OTP/magic-link + email/password, bcrypt/argon2, both from day one |
+| Auth | OTP/magic-link only, no password (PRD §7) |
 | Browser (later) | Plain React web client, same backend |
 | Desktop (later, optional) | Tauri wrapper |
 
@@ -64,7 +64,7 @@ North star: D7 retention. Secondary: avg call duration.
 - `/app` — Expo (React Native, TypeScript). `eas.json` present. MVP screen calls backend `/health` to prove connectivity.
 - Root `README.md` documents local run steps for both.
 
-Current task scope is skeleton only: no auth, no matching/signaling logic, no Hetzner deploy, coturn not yet wired into an actual call.
+Current task scope is skeleton only: no auth, no matching/signaling logic, coturn not yet wired into an actual call. Deploy config (`docker-compose.prod.yml`, `docs/deploy.md`) exists but nothing is deployed yet — see `tasks/05-hetzner-deploy.md` (pending) for the actual go-live work.
 
 ## Conventions for agents working in this repo
 

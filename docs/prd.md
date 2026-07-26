@@ -7,7 +7,7 @@ owners: Niels (eng), Christian (vision/QA/marketing)
 
 ## TL;DR
 
-Chat-roulette-style app that randomly pairs bored/lonely people for a virtual hangout over a drink. iOS + Android MVP (cross-platform framework), browser later. Core loop: instant random 1:1 video/audio/text match, optional filters (language, drink type, broad location), free skip, free to use. Lightweight accounts (18+, OTP/magic-link, self-declared birthdate), reactive report/block moderation with auto-suspend circuit breaker, proactive AI nudity detection required before public launch. Fully ephemeral matches — no friending, no history. North star metric: D7 retention.
+Chat-roulette-style app that randomly pairs bored/lonely people for a virtual hangout over a drink. iOS + Android MVP (cross-platform framework), browser later. Core loop: instant random 1:1 video/audio/text match, optional filters (language, drink type, broad location), free skip, free to use. Lightweight accounts (18+, email OTP/magic-link, self-declared birthdate), reactive report/block moderation with auto-suspend circuit breaker, proactive AI nudity detection required before public launch. Fully ephemeral matches — no friending, no history. North star metric: D7 retention.
 
 ---
 
@@ -62,7 +62,7 @@ Ship at MVP:
 
 ## 7. Identity & accounts
 
-- **Lightweight accounts required** — no fully-anonymous mode. Email or phone + OTP/magic-link, no password.
+- **Lightweight accounts required** — no fully-anonymous mode. Email + OTP/magic-link, no password.
 - Reasoning: pairing strangers on live video with alcohol involved needs *some* identity anchor from day one for safety/ban-evasion resistance, or the app inherits Omegle-style abuse/reputation problems immediately. Fully anonymous is much harder to retrofit trust/safety onto later.
 
 ## 8. Age gate
@@ -82,6 +82,7 @@ Ship at MVP:
 - **CSAM handling is a separate legal workstream from user-facing report/block.** When CSAM specifically is flagged (by report or, later, the AI detector), the company has its own mandatory-reporting duty (e.g. NCMEC, Danish straffelov) distinct from the auto-suspend circuit breaker above — needs its own incident-response runbook (evidence preservation minimums, reporting channel, do-not-locally-view policy). Tracked in `tasks/11-csam-reporting.md`.
 - **Alcohol-marketing law note**: Norway (Alkoholloven §9-2) and Sweden (Alkohollagen) restrict alcohol marketing heavily enough that both are excluded from MVP launch entirely (§3), not just "needs review" — app name/branding/store listing would need dedicated legal review before either market could ever go live. Any future market beyond Denmark needs the same check before launch, not just these two. Tracked in `tasks/12-alcohol-marketing-review.md`.
 - **Chat safety filters (MVP)**: server-side keyword/pattern matching over in-call text chat, checking for three trigger categories — (1) proposing to meet in person, (2) an age-disclosure exchange resolving to under-18, (3) sharing external contact info (social handles, phone number). A match silently flags the message + call/user context into the same moderation queue as report/block (§9 above) — no in-chat warning shown, no auto-suspend from a filter hit alone (avoids tipping off bad actors, avoids false-positive friction). Requires text chat to be server-relayed rather than pure P2P WebRTC datachannel, since the server must see plaintext to filter it — see `tasks/04-webrtc-signaling.md` note and `tasks/13-chat-safety-filters.md`.
+  - **Retention & access**: flagged plaintext content is retained only as long as needed for moderation review (time-boxed, exact window defined in `tasks/13-chat-safety-filters.md`), then deleted. Access restricted to authorized moderation personnel only, with access audit logging. If a flagged message specifically indicates CSAM, it escalates out of this queue into the separate mandatory-reporting workstream (`tasks/11-csam-reporting.md`) rather than being handled as a standard filter hit.
 
 ## 10. Monetization
 
