@@ -14,13 +14,13 @@ Needs to exist before task 07 (AI nudity detection) ships to any real traffic, s
 ## Scope
 
 ### Legal / process (not pure engineering — needs input beyond this repo)
-- Identify which mandatory-reporting regimes actually apply given launch markets (DK/SE/NO/FI, PRD §3) and any US-based infra/vendor nexus (e.g. if any US cloud service touches this data path) — confirm with counsel, don't assume.
+- Identify which mandatory-reporting regimes actually apply given the launch footprint (MVP Denmark, plus any prospective future markets per PRD §3) and any US-based infra/vendor nexus (e.g. if any US cloud service touches this data path) — confirm with counsel, don't assume.
 - Define an incident-response runbook: what to preserve (minimum necessary evidence only — do not over-retain), who reports it and to whom (NCMEC, Danish authorities, other national bodies), what the internal escalation path is when a report or (later) task 07's detector flags CSAM specifically vs. generic nudity/inappropriate content.
 - Explicit **do-not-locally-view** policy: define who (if anyone) at the company is authorized to view flagged content, and under what constraints — mishandling this internally can itself create legal exposure.
 
 ### Backend (`/backend`)
 - Distinguish "CSAM suspected" from generic nudity-report categories in the report/flag data model (task 06's `reports` table or a new flag) — needs its own escalation path, not lumped into the standard 3-reports-in-24h auto-suspend flow.
-- Evidence retention: minimal, time-boxed, access-controlled storage for what's legally required to preserve — not indefinite, not broadly accessible.
+- Evidence retention: minimal, time-boxed, access-controlled storage for what's legally required to preserve — not indefinite, not broadly accessible. Concretely: encrypted at rest and in transit; access restricted to the narrow authorized set defined in the runbook's do-not-locally-view policy; all access logged/audited; explicit retention window with a deletion deadline (per counsel's legally-required minimum, not indefinite); legal-hold override that pauses scheduled deletion only while a hold is active and resumes normal deletion once lifted.
 
 ## Explicitly out of scope
 
@@ -30,6 +30,6 @@ Needs to exist before task 07 (AI nudity detection) ships to any real traffic, s
 ## Done when
 
 - Runbook document exists: what counts as CSAM-suspected, who reports it, where, what's preserved, who (if anyone) may view it.
-- Legal regimes applicable to DK/SE/NO/FI (+ any US nexus) are identified and cited in the runbook, confirmed against actual counsel input, not assumed.
+- Legal regimes applicable to MVP Denmark plus any prospective markets (+ any US nexus) are identified and cited in the runbook, confirmed against actual counsel input, not assumed.
 - Backend can flag a report as CSAM-suspected distinct from generic categories, routing to the runbook's escalation path instead of (or in addition to) task 06's auto-suspend.
 - This ships before task 07 (AI nudity detection) goes live on real traffic.

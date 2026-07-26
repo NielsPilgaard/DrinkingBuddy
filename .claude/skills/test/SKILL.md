@@ -5,7 +5,7 @@ description: Run DrinkingBuddy backend test suite (unit/integration/all) via scr
 
 # test
 
-Wraps `scripts/test.ps1`. Backend only — `/app` (Expo/RN) has no test suite yet, codegen-only client at this stage.
+Wraps `scripts/test.ps1`. Backend only — `/app` (Expo/RN) consumes the generated client and health query already, but has no test suite yet.
 
 ## Run
 

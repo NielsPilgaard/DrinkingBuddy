@@ -12,7 +12,7 @@ Given a match result from the queue task, establish an actual WebRTC call betwee
 ## Scope
 
 ### Backend (`/backend`)
-- Websocket endpoint: relay offer/answer/ICE candidates between the two matched clients only. No audio/video media touches the server.
+- Websocket endpoint: relays offer/answer/ICE candidates and text chat messages between the two matched clients. Audio/video media never touches the server (P2P only).
 - **Text chat is server-relayed, not a P2P WebRTC datachannel.** Messages go over the same signaling websocket connection and are relayed server-side (not just offer/answer/ICE). This is a deliberate deviation from "pure P2P" for video/audio — required so the server can see plaintext message content for the chat safety filters (`tasks/13-chat-safety-filters.md`, PRD §9). Video/audio stay P2P as originally planned; only text is routed through the server.
 - coturn config: generate/serve TURN credentials (time-limited, per-call or per-session) to clients so they can use the self-hosted coturn instance.
 - Call-session bookkeeping: map matched pair → active signaling session, teardown on either side leaving.
