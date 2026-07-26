@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     coturn_secret: str = "changeme"
 
-    otel_enabled: bool = True
+    otel_enabled: bool = False
     otel_service_name: str = "drinkingbuddy-api"
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
 

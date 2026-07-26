@@ -32,7 +32,7 @@ Traces, metrics, and logs export via OTLP to a local [grafana/otel-lgtm](https:/
 
 Container stdout logs (Postgres, Redis, coturn, API) ship to Loki via the Docker Loki logging driver — requires a one-time host plugin install, see [docs/deploy.md](docs/deploy.md).
 
-Set `OTEL_ENABLED=false` in `.env` to disable instrumentation entirely (e.g. for lightweight local runs).
+Set `OTEL_ENABLED=false` in `.env` to disable instrumentation entirely (default when running the API outside Docker via `uv run`, e.g. for tests). Under `docker compose up` the `otel-lgtm` container still starts either way — the flag only controls whether the API exports to it.
 
 ## Mobile app (`/app`)
 

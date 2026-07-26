@@ -1,0 +1,31 @@
+# Windows override: Docker Desktop's Windows/WSL2 engine can't install the
+# grafana/loki-docker-driver plugin (Linux-daemon-only). Swap Loki logging for
+# json-file so services still start; logs stay local (docker logs), not in Grafana.
+services:
+  api:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  coturn:
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
