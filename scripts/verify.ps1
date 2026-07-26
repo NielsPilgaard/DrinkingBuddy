@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # Lint + format-check + typecheck for backend (ruff, ty) and app (biome, tsc).
-# Run from repo root. Exits non-zero on first failure.
+# Run from repo root. All checks run regardless of earlier failures; exits non-zero at the end if any failed.
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -10,13 +10,22 @@ function Invoke-Step {
     param([string]$Name, [string]$WorkingDir, [string]$Exe, [string[]]$Arguments)
 
     Write-Host "==> $Name" -ForegroundColor Cyan
-    Push-Location $WorkingDir
+    try {
+        Push-Location $WorkingDir -ErrorAction Stop
+    } catch {
+        Write-Host "FAILED: $Name ($_)" -ForegroundColor Red
+        $script:failed = $true
+        return
+    }
     try {
         & $Exe @Arguments
         if ($LASTEXITCODE -ne 0) {
             Write-Host "FAILED: $Name" -ForegroundColor Red
             $script:failed = $true
         }
+    } catch {
+        Write-Host "FAILED: $Name ($_)" -ForegroundColor Red
+        $script:failed = $true
     } finally {
         Pop-Location
     }
