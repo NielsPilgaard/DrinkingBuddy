@@ -12,8 +12,9 @@ async def test_database_connection(postgres_container) -> None:
     )
     engine = create_async_engine(url)
 
-    async with engine.connect() as conn:
-        result = await conn.execute(text("SELECT 1"))
-        assert result.scalar() == 1
-
-    await engine.dispose()
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+    finally:
+        await engine.dispose()
