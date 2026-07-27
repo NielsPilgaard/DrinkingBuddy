@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { healthHealthGetOptions } from './src/api/generated/@tanstack/react-query.gen';
-import { client } from './src/api/generated/client.gen';
+import { configureApiClient } from './src/api/setup';
+import { AuthProvider, useAuth } from './src/auth/context';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
-client.setConfig({ baseUrl: API_URL });
+configureApiClient(API_URL);
 
 const queryClient = new QueryClient();
 
@@ -24,10 +26,42 @@ function HealthCheck() {
   );
 }
 
+function Root() {
+  const auth = useAuth();
+
+  if (auth.status === 'loading' || auth.status === 'verifying') {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (auth.status === 'signed-out' || auth.status === 'verify-failed') {
+    return (
+      <View style={styles.container}>
+        {auth.status === 'verify-failed' && (
+          <Text style={styles.error}>Sign-in link was invalid or expired. Try again.</Text>
+        )}
+        <LoginScreen />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <HealthCheck />
+      <StatusBar style="auto" />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <HealthCheck />
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

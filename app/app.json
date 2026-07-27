@@ -3,11 +3,13 @@
     "name": "DrinkingBuddy",
     "slug": "drinkingbuddy",
     "version": "1.0.0",
+    "scheme": "drinkingbuddy",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "associatedDomains": ["applinks:app.drinking-buddy.app"]
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +18,21 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "app.drinking-buddy.app", "pathPrefix": "/verify" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": ["expo-secure-store"]
   }
 }
