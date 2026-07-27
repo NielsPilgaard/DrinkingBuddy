@@ -18,7 +18,7 @@ Driven by launch-market law (UK OSA, EU DSA treat random stranger video contact 
 - Didit integration: Age Estimation product (selfie + liveness) as default method; adaptive fallback to Didit's ID-verification for borderline cases; Denmark uses Didit's CPR-register passthrough instead of Age Estimation.
 - Webcam-gate check: when a match is formed (task 03) or video is toggled on, both parties are re-evaluated fresh against the full predicate — `status = verified` AND not expired (if `expiry` set, `now < expiry`) AND `revoked_at IS NULL` — on every match/toggle gate evaluation, not just checked once at initial verification. If either party fails the predicate, video stays unavailable for the session.
 - Cost control:
-  - Hard monthly spend cap on Didit API usage, config via `.env`.
+  - Hard monthly cap of 500 Didit verification calls, config via `.env`. Caps only Didit spend — signup/account creation stays uncapped and unaffected.
   - Budget alerts at 50%/80%/100% of cap (log/notify — exact channel TBD in this task, e.g. email to team).
   - When cap is hit: new verification requests do **not** error/block — user is added to a `verification_waitlist` table instead, gets a welcome-back email when next month's quota opens (don't hard-fail the user experience over a billing ceiling).
   - Rate-limit verification attempts: per-user (e.g. max N attempts before cooldown) **and** per-IP/device (catches bot-farm abuse creating many accounts to burn quota).
