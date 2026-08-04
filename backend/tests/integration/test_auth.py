@@ -156,3 +156,59 @@ async def test_magic_link_is_single_use(client, monkeypatch) -> None:
 
     second = await client.get("/auth/verify", params={"token": token})
     assert second.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_session(client, db_session, monkeypatch) -> None:
+    sent = _capture_deep_links(monkeypatch)
+
+    await client.post(
+        "/auth/request-link",
+        json={"email": "logout@example.com", "birthdate": "2000-01-01"},
+    )
+    token = _token_from_deep_link(sent[0])
+    verify_response = await client.get("/auth/verify", params={"token": token})
+    session_token = verify_response.json()["session_token"]
+
+    assert await auth_service.get_user_for_session_token(db_session, session_token) is not None
+
+    logout_response = await client.post(
+        "/auth/logout", headers={"Authorization": f"Bearer {session_token}"}
+    )
+    assert logout_response.status_code == 204
+
+    assert await auth_service.get_user_for_session_token(db_session, session_token) is None
+
+
+@pytest.mark.asyncio
+async def test_logout_is_idempotent_on_already_revoked_session(client, monkeypatch) -> None:
+    sent = _capture_deep_links(monkeypatch)
+
+    await client.post(
+        "/auth/request-link",
+        json={"email": "logout-twice@example.com", "birthdate": "2000-01-01"},
+    )
+    token = _token_from_deep_link(sent[0])
+    verify_response = await client.get("/auth/verify", params={"token": token})
+    session_token = verify_response.json()["session_token"]
+
+    headers = {"Authorization": f"Bearer {session_token}"}
+    first = await client.post("/auth/logout", headers=headers)
+    second = await client.post("/auth/logout", headers=headers)
+
+    assert first.status_code == 204
+    assert second.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_logout_is_idempotent_on_unknown_token(client) -> None:
+    response = await client.post(
+        "/auth/logout", headers={"Authorization": "Bearer not-a-real-session-token"}
+    )
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_logout_without_authorization_header_is_noop(client) -> None:
+    response = await client.post("/auth/logout")
+    assert response.status_code == 204

@@ -26,6 +26,12 @@ def _is_underage(birthdate: date) -> bool:
     return age < MIN_SIGNUP_AGE_YEARS
 
 
+def _mint_token(ttl: timedelta) -> tuple[str, str, datetime]:
+    """Generate a raw token, its stored hash, and its expiry, `ttl` from now."""
+    raw = generate_token()
+    return raw, hash_token(raw), datetime.now(UTC) + ttl
+
+
 async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> None:
     normalized_email = email.strip().lower()
     result = await db.execute(select(User).where(User.email == normalized_email))
@@ -42,11 +48,13 @@ async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> 
         db.add(user)
         await db.flush()
 
-    raw_token = generate_token()
+    raw_token, token_hash, expires_at = _mint_token(
+        timedelta(minutes=settings.magic_link_ttl_minutes)
+    )
     magic_link = MagicLinkToken(
         user_id=user.id,
-        token_hash=hash_token(raw_token),
-        expires_at=datetime.now(UTC) + timedelta(minutes=settings.magic_link_ttl_minutes),
+        token_hash=token_hash,
+        expires_at=expires_at,
     )
     db.add(magic_link)
     await db.flush()
@@ -64,9 +72,7 @@ async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> 
 async def verify_token(db: AsyncSession, raw_token: str) -> tuple[str, User]:
     token_hash = hash_token(raw_token)
     result = await db.execute(
-        select(MagicLinkToken)
-        .where(MagicLinkToken.token_hash == token_hash)
-        .with_for_update()
+        select(MagicLinkToken).where(MagicLinkToken.token_hash == token_hash).with_for_update()
     )
     magic_link = result.scalar_one_or_none()
 
@@ -80,11 +86,13 @@ async def verify_token(db: AsyncSession, raw_token: str) -> tuple[str, User]:
     if user is None:
         raise InvalidOrExpiredTokenError
 
-    raw_session_token = generate_token()
+    raw_session_token, session_token_hash, session_expires_at = _mint_token(
+        timedelta(days=settings.session_ttl_days)
+    )
     session = Session(
         user_id=user.id,
-        token_hash=hash_token(raw_session_token),
-        expires_at=now + timedelta(days=settings.session_ttl_days),
+        token_hash=session_token_hash,
+        expires_at=session_expires_at,
     )
     db.add(session)
     await db.commit()
@@ -102,3 +110,17 @@ async def get_user_for_session_token(db: AsyncSession, raw_token: str) -> User |
         return None
 
     return await db.get(User, session.user_id)
+
+
+async def revoke_session(db: AsyncSession, raw_token: str) -> None:
+    """Revoke the session for `raw_token`, if any. Idempotent: silently no-ops
+    for an unknown, expired, or already-revoked token."""
+    token_hash = hash_token(raw_token)
+    result = await db.execute(select(Session).where(Session.token_hash == token_hash))
+    session = result.scalar_one_or_none()
+
+    if session is None or session.revoked_at is not None:
+        return
+
+    session.revoked_at = datetime.now(UTC)
+    await db.commit()
