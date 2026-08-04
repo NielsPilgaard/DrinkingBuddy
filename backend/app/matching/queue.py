@@ -66,9 +66,7 @@ async def enqueue(
     """
     bucket = _bucket_key(filters, widened=widened)
 
-    result = await redis.eval(
-        _ENQUEUE_SCRIPT, 2, bucket, _filters_key(user_id), str(user_id)
-    )
+    result = await redis.eval(_ENQUEUE_SCRIPT, 2, bucket, _filters_key(user_id), str(user_id))
     if not result:
         return None
     return uuid.UUID(result)

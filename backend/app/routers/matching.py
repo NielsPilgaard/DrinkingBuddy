@@ -6,12 +6,12 @@ import anyio
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from redis.asyncio import Redis
-from redis.asyncio.client import PubSub
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.service import get_user_for_session_token
 from app.db import get_db
-from app.matching.queue import dequeue, enqueue, match_channel
+from app.matching.pairing import DEFAULT_COLD_START_TIMEOUT_SECONDS, find_or_wait
+from app.matching.queue import dequeue
 from app.matching.schemas import (
     ErrorEvent,
     Filters,
@@ -26,7 +26,7 @@ from app.redis import get_redis
 
 router = APIRouter(tags=["matching"])
 
-COLD_START_TIMEOUT_SECONDS = 25
+COLD_START_TIMEOUT_SECONDS = DEFAULT_COLD_START_TIMEOUT_SECONDS
 _redis_dependency = Depends(get_redis)
 _db_dependency = Depends(get_db)
 
@@ -40,39 +40,22 @@ async def _authenticate(websocket: WebSocket, db: AsyncSession) -> uuid.UUID | N
     return user.id if user else None
 
 
-async def _wait_for_match(pubsub: PubSub) -> uuid.UUID:
-    while True:
-        message = await pubsub.get_message(
-            ignore_subscribe_messages=True, timeout=COLD_START_TIMEOUT_SECONDS
-        )
-        if message is None:
-            raise TimeoutError
-        if message["type"] == "message":
-            return uuid.UUID(message["data"])
-
-
 async def _join_and_wait(
     websocket: WebSocket, redis: Redis, user_id: uuid.UUID, filters: Filters, *, widened: bool
 ) -> uuid.UUID | None:
     """Enqueue user and wait for a match. Returns partner_id, or None on cold-start timeout."""
-    pubsub = redis.pubsub()
-    async with pubsub:
-        # Subscribe before enqueueing: enqueue() can make this user matchable
-        # (and immediately popped + published to) by a concurrent partner, so
-        # the subscription must already be live or that publish is dropped.
-        await pubsub.subscribe(match_channel(user_id))
 
-        partner_id = await enqueue(redis, user_id, filters, widened=widened)
-        if partner_id is not None:
-            await redis.publish(match_channel(partner_id), str(user_id))
-            return partner_id
-
+    async def _send_waiting() -> None:
         await websocket.send_json(WaitingEvent().model_dump())
-        try:
-            return await _wait_for_match(pubsub)
-        except TimeoutError:
-            await dequeue(redis, user_id)
-            return None
+
+    return await find_or_wait(
+        redis,
+        user_id,
+        filters,
+        widened=widened,
+        timeout_seconds=COLD_START_TIMEOUT_SECONDS,
+        on_waiting=_send_waiting,
+    )
 
 
 @router.websocket("/matching/ws")
@@ -150,9 +133,7 @@ async def matching_ws(
                 if current_filters is not None:
                     await dequeue(redis, user_id)
                     wait_task = asyncio.ensure_future(
-                        _join_and_wait(
-                            websocket, redis, user_id, current_filters, widened=False
-                        )
+                        _join_and_wait(websocket, redis, user_id, current_filters, widened=False)
                     )
 
             elif msg_type == "leave":

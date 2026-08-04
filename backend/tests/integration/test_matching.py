@@ -3,10 +3,12 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 import app.auth.service as auth_service
+from app.matching.queue import QUEUE_KEY_PREFIX
 
 pytestmark = pytest.mark.integration
 
 FILTERS_DK_EN_ALC = {"language": "en", "drink_type": "alcoholic", "location": "dk"}
+FILTERS_NO_EN_ALC = {"language": "en", "drink_type": "alcoholic", "location": "no"}
 FILTERS_DK_EN_NONALC = {"language": "en", "drink_type": "non_alcoholic", "location": "dk"}
 
 
@@ -130,7 +132,7 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
     port = redis_container.get_exposed_port(6379)
     redis = Redis.from_url(f"redis://{host}:{port}/0", decode_responses=True)
     try:
-        keys = await redis.keys("queue:*")
+        keys = await redis.keys(f"{QUEUE_KEY_PREFIX}:*")
         assert keys == []
     finally:
         await redis.aclose()
@@ -139,4 +141,49 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
         await ws_b.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting = await ws_b.receive_json()
         assert waiting["type"] == "waiting"
+        await ws_b.send_json({"type": "leave"})
+
+
+@pytest.mark.asyncio
+async def test_widen_search_pairs_across_locations(ws_client, monkeypatch):
+    token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "kevin@example.com")
+    token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "laura@example.com")
+
+    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+        await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC, "widen_search": True})
+        waiting = await ws_a.receive_json()
+        assert waiting["type"] == "waiting"
+
+        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+            await ws_b.send_json(
+                {"type": "join", "filters": FILTERS_NO_EN_ALC, "widen_search": True}
+            )
+
+            matched_b = await ws_b.receive_json()
+            matched_a = await ws_a.receive_json()
+
+    assert matched_a["type"] == "matched"
+    assert matched_b["type"] == "matched"
+    assert matched_a["partner_id"] == user_b_id
+    assert matched_b["partner_id"] == user_a_id
+
+
+@pytest.mark.asyncio
+async def test_without_widen_search_different_locations_do_not_pair(ws_client, monkeypatch):
+    token_a, _ = await _signup_and_get_token(ws_client, monkeypatch, "mallory@example.com")
+    token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "niaj@example.com")
+
+    async with (
+        ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a,
+        ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b,
+    ):
+        await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
+        waiting_a = await ws_a.receive_json()
+        assert waiting_a["type"] == "waiting"
+
+        await ws_b.send_json({"type": "join", "filters": FILTERS_NO_EN_ALC})
+        waiting_b = await ws_b.receive_json()
+        assert waiting_b["type"] == "waiting"
+
+        await ws_a.send_json({"type": "leave"})
         await ws_b.send_json({"type": "leave"})
