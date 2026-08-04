@@ -64,7 +64,7 @@ North star: D7 retention. Secondary: avg call duration.
 - `/app` — Expo (React Native, TypeScript). `eas.json` present. MVP screen calls backend `/health` to prove connectivity.
 - Root `README.md` documents local run steps for both.
 
-Current task scope is skeleton only: no auth, no matching/signaling logic, coturn not yet wired into an actual call. Deploy config (`docker-compose.prod.yml`, `docs/deploy.md`) exists but nothing is deployed yet — see `tasks/05-hetzner-deploy.md` (pending) for the actual go-live work.
+Magic-link auth (`tasks/02-auth-magic-link.md`) and matching queue (`tasks/03-matching-queue.md`) are implemented. Signaling (WebRTC offer/answer/ICE relay) and coturn wiring are not yet built. Deploy config (`docker-compose.prod.yml`, `docs/deploy.md`) exists but nothing is deployed yet — see `tasks/05-hetzner-deploy.md` (pending) for the actual go-live work.
 
 ## Conventions for agents working in this repo
 
