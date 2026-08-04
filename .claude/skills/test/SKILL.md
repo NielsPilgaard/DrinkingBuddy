@@ -20,7 +20,7 @@ Wraps `scripts/test.ps1`. Backend only — `/app` (Expo/RN) consumes the generat
 ## Tiers
 
 - `tests/unit/` — no I/O, ASGI transport against `app.main.app` directly.
-- `tests/integration/` — real Postgres via testcontainers (session-scoped fixture in `tests/integration/conftest.py`), auth/DB deps not yet present to override (no auth exists yet per AGENTS.md scope).
+- `tests/integration/` — real Postgres via testcontainers (session-scoped fixture in `tests/integration/conftest.py`). Auth (magic-link) and matching queue (Redis) are implemented — see `tests/integration/test_auth.py`, `test_matching.py`, `test_pairing.py` for fixture patterns (session token override, Redis container).
 
 See `testing-strategy` skill for tier conventions (fixture patterns, testcontainers images) if extending — e.g. adding E2E once app has a real client.
 
@@ -32,5 +32,4 @@ See `testing-strategy` skill for tier conventions (fixture patterns, testcontain
 ## Gotchas
 
 - Integration tier needs Docker daemon running; script checks and errors clearly if not.
-- Don't add auth overrides yet — no auth implemented (see tasks/ for scope boundaries).
 - Keep container fixtures session-scoped — don't spin one per test.
