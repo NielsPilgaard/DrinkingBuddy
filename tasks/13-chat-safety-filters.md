@@ -18,7 +18,10 @@ MVP-required (PRD §9) reactive text-chat safety net: server-side keyword/patter
   2. **Age-disclosure resolving under-18** — age-question pattern ("how old are you" / "hvor gammel er du") followed by an answer parsing to under 18.
   3. **External contact-info sharing** — social handles (Facebook, Instagram, Snapchat, etc.), phone numbers, other off-platform contact methods.
 - On match: **silently flag** — write to the same moderation queue/store as report/block (`tasks/06-report-block.md`), including message content, call session id, both user ids, matched category, timestamp. No in-chat warning shown to either user, no auto-suspend triggered by a filter hit alone (keyword match has no context understanding — false positives expected, e.g. two adults discussing someone else's age).
-- Config: keyword/pattern lists should be editable without a code deploy (e.g. DB table or config file), since language/slang patterns will need tuning post-launch.
+  - Flagged content (message text + metadata) is moderator-access-only, encrypted in transit and at rest, with access audit logging.
+  - **Retention**: raw flagged content (message text + metadata) is retained **30 days** from the flag timestamp (PRD §9 requires a time-boxed window; this task sets the exact figure — no fixed number exists elsewhere in PRD). A scheduled deletion job (daily) purges rows past the 30-day cutoff; deletion must complete within 24h of crossing the cutoff. If a deletion run fails, it retries on the next scheduled run and alerts moderation-on-call after 2 consecutive failed runs (escalation, not silent skip). Deletion (each run: rows purged, timestamp, success/failure) is logged to the same audit trail as access logging, so retention/deletion compliance can be verified after the fact — an auditor can confirm no flagged row exists older than 30 days + 24h.
+  - If a flagged message specifically indicates suspected CSAM, it escalates into the separate mandatory-reporting workstream (`tasks/11-csam-reporting.md`) instead of sitting in the standard moderation queue — evidence handling follows that task's do-not-locally-view/access-control rules, not this task's.
+- Config: keyword/pattern lists should be editable without a code deploy (e.g. DB table or config file), since language/slang patterns will need tuning post-launch. Edits require privileged/authorized access, are versioned with an auditable change history, are validated before taking effect, and can be rolled back to a prior known-good version.
 
 ### Mobile app (`/app`)
 - No UI changes — filtering and flagging is entirely server-side and invisible to users.
@@ -36,3 +39,4 @@ MVP-required (PRD §9) reactive text-chat safety net: server-side keyword/patter
 - No in-chat indication is shown to either user that a message was flagged.
 - A filter hit alone does not trigger auto-suspend.
 - Keyword/pattern lists can be updated without a code deploy.
+- Flagged content older than 30 days + 24h grace does not exist in the store (verified via scheduled-job audit log: run timestamp, rows purged, success/failure, escalation on repeated failure).

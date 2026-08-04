@@ -4,6 +4,8 @@ x-loki-logging: &loki-logging
     loki-url: "http://localhost:3100/loki/api/v1/push"
     loki-retries: "3"
     loki-batch-size: "400"
+    max-size: "10m"
+    max-file: "3"
 
 services:
   otel-lgtm:
@@ -45,7 +47,7 @@ services:
       migrate:
         condition: service_completed_successfully
       otel-lgtm:
-        condition: service_healthy
+        condition: service_started
     volumes:
       - ./app:/srv/app
       - ./alembic:/srv/alembic

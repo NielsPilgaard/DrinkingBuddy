@@ -20,7 +20,7 @@ Tracking file for PRD §13 parking-lot items — explicitly out of scope for MVP
 - [ ] Precise GPS-based location matching — self-declared region chosen deliberately for safety + avoiding early-pool fragmentation (PRD §5); revisit only with real scale.
 - [ ] Nordic eID (MitID/BankID/mobiilivarmenne) and EU AltID/EUDI wallet integration for age verification — not before 2027, Didit covers verification at launch instead (`tasks/10-age-verification.md`, PRD §8).
 - [ ] Markets outside Denmark — Norway/Sweden ruled out by alcohol-marketing law, others need per-country legal review before adding (PRD §3). Not "Nordics-first" — MVP is Denmark-only.
-- [ ] Non-alcohol variant ("HydrationBuddy") for markets with alcohol-advertising restrictions (Norway/Sweden) — revisit only if DrinkingBuddy hits product-market fit.
+- [x] Non-alcohol variant ("HydrationBuddy") for markets with alcohol-advertising restrictions (Norway/Sweden) — pulled into `tasks/13-hydrationbuddy-reskin.md`.
 
 ## Explicitly out of scope
 

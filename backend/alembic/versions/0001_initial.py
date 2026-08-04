@@ -1,6 +1,6 @@
 """initial
 
-Revision ID: b0153df16b06
+Revision ID: 0001_initial
 Revises:
 Create Date: 2026-07-13 23:06:02.818363
 
@@ -8,7 +8,7 @@ Create Date: 2026-07-13 23:06:02.818363
 
 from collections.abc import Sequence
 
-revision: str = "b0153df16b06"
+revision: str = "0001_initial"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

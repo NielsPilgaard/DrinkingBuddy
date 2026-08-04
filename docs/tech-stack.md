@@ -7,7 +7,7 @@ owners: Niels (eng)
 
 ## TL;DR
 
-Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single Hetzner VPS via Docker Compose. React Native (Expo) for iOS + Android MVP. Auth supports both OTP/magic-link and email+password. Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
+Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single Hetzner VPS via Docker Compose. React Native (Expo) for iOS + Android MVP. Auth is OTP/magic-link only, no password (PRD §7). Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
 
 ---
 
@@ -26,12 +26,11 @@ Swapped from Node.js to Python per engineering preference. No meaningful capabil
 - **DB**: Postgres — users, reports, suspensions, auth credentials.
 - **Queue/matching state**: Redis — fast push/pop for matching queue, ephemeral by design (matches PRD's stateless match model).
 
-## 3. Auth — OTP/magic-link AND email+password
+## 3. Auth — OTP/magic-link only
 
-Both supported from day one (cheap to add together, not worth doing as separate fast-follows):
+Per PRD §7 (no password, lightweight identity anchor):
 
 - **Magic-link/OTP**: email-based (avoid SMS cost at MVP volume).
-- **Email + password**: bcrypt/argon2 hashing, rate-limited login attempts, "forgot password" flow reuses magic-link email infra.
 - No ID verification — self-declared birthdate per PRD §8.
 
 ## 4. WebRTC transport
@@ -68,6 +67,6 @@ No single stack unifies app+web+desktop with full webcam/mic control better than
 | Queue/matching state | Redis |
 | TURN/STUN | Self-hosted coturn |
 | Hosting | Hetzner VPS, Docker Compose |
-| Auth | OTP/magic-link + email/password |
+| Auth | OTP/magic-link only, no password |
 | Browser (later) | React web, same backend |
 | Desktop (later, optional) | Tauri wrapper around web client |

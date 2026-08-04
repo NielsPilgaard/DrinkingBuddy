@@ -9,7 +9,7 @@ depends_on: docs/prd.md
 
 Legal review, not engineering work: Norway (Alkoholloven §9-2) bans alcohol advertising near-totally — broad enough scope to plausibly cover anything read as promoting alcohol use, not just brand ads. Sweden (Alkohollagen) restricts alcohol marketing too. App's premise/branding ("hangout over a drink", name "DrinkingBuddy", drink-type filter per PRD §5) creates exposure specifically for the app's public-facing framing (name, store listing, marketing copy) — separate question from the in-app drink-type filter itself, which is personal-use context, not marketing.
 
-Blocks Norway/Sweden going live (PRD §3, Nordics-first launch) — not a blocker for Denmark or Finland, which don't have the same near-total ad-ban framing.
+Blocks Norway/Sweden going live (PRD §3) — not a blocker for Denmark specifically. Finland is not covered by this task's near-total-ad-ban framing, but per PRD §3 it still needs its own completed legal review before launch there; do not treat Finland as cleared by this task.
 
 ## Scope
 
@@ -26,7 +26,7 @@ Blocks Norway/Sweden going live (PRD §3, Nordics-first launch) — not a blocke
 ## Explicitly out of scope
 
 - Changing the drink-type filter functionality itself (PRD §5) — this task is about branding/marketing exposure, not the filter feature.
-- Denmark/Finland-specific review — not flagged as having the same near-total ad-ban framing as NO/SE, revisit only if that assumption turns out wrong.
+- Denmark-specific review — not flagged as having the same near-total ad-ban framing as NO/SE, revisit only if that assumption turns out wrong. (Finland is out of scope for *this* task's ad-ban framing too, but still requires its own separate legal review before launch there, per PRD §3 — not covered or cleared by this task.)
 
 ## Done when
 

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { HealthHealthGetData, HealthHealthGetResponses } from './types.gen';
+import type { HealthHealthGetData, HealthHealthGetResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetErrors, VerifyEndpointAuthVerifyGetResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -22,3 +22,20 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Health
  */
 export const healthHealthGet = <ThrowOnError extends boolean = false>(options?: Options<HealthHealthGetData, ThrowOnError>): RequestResult<HealthHealthGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthHealthGetResponses, unknown, ThrowOnError>({ url: '/health', ...options });
+
+/**
+ * Request Link Endpoint
+ */
+export const requestLinkEndpointAuthRequestLinkPost = <ThrowOnError extends boolean = false>(options: Options<RequestLinkEndpointAuthRequestLinkPostData, ThrowOnError>): RequestResult<RequestLinkEndpointAuthRequestLinkPostResponses, RequestLinkEndpointAuthRequestLinkPostErrors, ThrowOnError> => (options.client ?? client).post<RequestLinkEndpointAuthRequestLinkPostResponses, RequestLinkEndpointAuthRequestLinkPostErrors, ThrowOnError>({
+    url: '/auth/request-link',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Verify Endpoint
+ */
+export const verifyEndpointAuthVerifyGet = <ThrowOnError extends boolean = false>(options: Options<VerifyEndpointAuthVerifyGetData, ThrowOnError>): RequestResult<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError> => (options.client ?? client).get<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError>({ url: '/auth/verify', ...options });

@@ -1,6 +1,6 @@
 ---
 title: Generated API client in RN app
-status: done
+status: in_progress
 last_updated: 2026-07-14
 depends_on: tasks/01-scaffold-repo.md
 ---
