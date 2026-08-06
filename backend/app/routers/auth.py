@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.schemas import RequestLinkBody, RequestLinkResponse, VerifyResponse
 from app.auth.service import (
+    AccountSuspendedError,
     InvalidOrExpiredTokenError,
     request_link,
     revoke_session,
@@ -33,6 +34,11 @@ async def verify_endpoint(token: str, db: AsyncSession = _db_dependency) -> Veri
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired link.",
+        ) from exc
+    except AccountSuspendedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account suspended pending review.",
         ) from exc
 
     return VerifyResponse(session_token=session_token, user_id=user.id, email=user.email)

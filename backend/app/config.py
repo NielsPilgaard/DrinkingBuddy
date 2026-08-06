@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     verification_rate_limit_per_ip: int = 10
     verification_rate_limit_ip_window_minutes: int = 60
 
+    report_auto_suspend_threshold: int = 3
+    report_window_hours: int = 24
+    suspension_duration_hours: int = 24
+
 
 settings = Settings()
 

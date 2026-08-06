@@ -10,11 +10,16 @@ from app.email import send_magic_link_email
 from app.models.magic_link_token import MagicLinkToken
 from app.models.session import Session
 from app.models.user import User
+from app.moderation.service import is_suspended
 
 MIN_SIGNUP_AGE_YEARS = 18
 
 
 class InvalidOrExpiredTokenError(Exception):
+    pass
+
+
+class AccountSuspendedError(Exception):
     pass
 
 
@@ -85,6 +90,9 @@ async def verify_token(db: AsyncSession, raw_token: str) -> tuple[str, User]:
     user = await db.get(User, magic_link.user_id)
     if user is None:
         raise InvalidOrExpiredTokenError
+
+    if await is_suspended(db, user.id):
+        raise AccountSuspendedError
 
     raw_session_token, session_token_hash, session_expires_at = _mint_token(
         timedelta(days=settings.session_ttl_days)
