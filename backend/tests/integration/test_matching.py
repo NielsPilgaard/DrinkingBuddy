@@ -1,3 +1,4 @@
+import asyncio
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -132,7 +133,15 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
     port = redis_container.get_exposed_port(6379)
     redis = Redis.from_url(f"redis://{host}:{port}/0", decode_responses=True)
     try:
-        keys = await redis.keys(f"{QUEUE_KEY_PREFIX}:*")
+        # The client-side context manager exiting only closes the socket; the
+        # server's disconnect cleanup (dequeue) runs concurrently, not before
+        # the client observes the close, so poll rather than assert instantly.
+        keys = [1]
+        for _ in range(50):
+            keys = await redis.keys(f"{QUEUE_KEY_PREFIX}:*")
+            if not keys:
+                break
+            await asyncio.sleep(0.1)
         assert keys == []
     finally:
         await redis.aclose()

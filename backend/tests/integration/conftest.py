@@ -21,6 +21,18 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
+class _EventServer(uvicorn.Server):
+    """uvicorn.Server that signals an asyncio.Event once startup completes."""
+
+    def __init__(self, config: uvicorn.Config) -> None:
+        super().__init__(config)
+        self.startup_event = asyncio.Event()
+
+    async def startup(self, sockets: list[socket.socket] | None = None) -> None:
+        await super().startup(sockets=sockets)
+        self.startup_event.set()
+
+
 @pytest.fixture(scope="session")
 def postgres_container():
     with PostgresContainer("postgres:17-alpine") as pg:
@@ -123,11 +135,18 @@ async def ws_client(db_url, redis_container):
     app.dependency_overrides[get_redis] = override_get_redis
 
     server_port = _free_port()
-    config = uvicorn.Config(app, host="127.0.0.1", port=server_port, log_level="warning")
-    server = uvicorn.Server(config)
+    config = uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=server_port,
+        log_level="warning",
+        # Without a bound, graceful shutdown can hang indefinitely waiting on
+        # already-disconnected client sockets (observed on Windows/Proactor).
+        timeout_graceful_shutdown=5,
+    )
+    server = _EventServer(config)
     server_task = asyncio.create_task(server.serve())
-    while not server.started:
-        await asyncio.sleep(0.01)
+    await server.startup_event.wait()
 
     async with AsyncClient(base_url=f"http://127.0.0.1:{server_port}") as ac:
         yield ac
