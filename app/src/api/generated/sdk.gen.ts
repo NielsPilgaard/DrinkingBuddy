@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { HealthHealthGetData, HealthHealthGetResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetErrors, VerifyEndpointAuthVerifyGetResponses } from './types.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostErrors, BlockEndpointBlockPostResponses, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponses, HealthHealthGetData, HealthHealthGetResponses, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponses, ReportEndpointReportPostData, ReportEndpointReportPostErrors, ReportEndpointReportPostResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostErrors, StartVerificationEndpointVerifyStartPostResponses, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponses, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetErrors, VerifyEndpointAuthVerifyGetResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -39,3 +39,65 @@ export const requestLinkEndpointAuthRequestLinkPost = <ThrowOnError extends bool
  * Verify Endpoint
  */
 export const verifyEndpointAuthVerifyGet = <ThrowOnError extends boolean = false>(options: Options<VerifyEndpointAuthVerifyGetData, ThrowOnError>): RequestResult<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError> => (options.client ?? client).get<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError>({ url: '/auth/verify', ...options });
+
+/**
+ * Logout Endpoint
+ */
+export const logoutEndpointAuthLogoutPost = <ThrowOnError extends boolean = false>(options?: Options<LogoutEndpointAuthLogoutPostData, ThrowOnError>): RequestResult<LogoutEndpointAuthLogoutPostResponses, unknown, ThrowOnError> => (options?.client ?? client).post<LogoutEndpointAuthLogoutPostResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/auth/logout',
+    ...options
+});
+
+/**
+ * Report Endpoint
+ */
+export const reportEndpointReportPost = <ThrowOnError extends boolean = false>(options: Options<ReportEndpointReportPostData, ThrowOnError>): RequestResult<ReportEndpointReportPostResponses, ReportEndpointReportPostErrors, ThrowOnError> => (options.client ?? client).post<ReportEndpointReportPostResponses, ReportEndpointReportPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/report',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Block Endpoint
+ */
+export const blockEndpointBlockPost = <ThrowOnError extends boolean = false>(options: Options<BlockEndpointBlockPostData, ThrowOnError>): RequestResult<BlockEndpointBlockPostResponses, BlockEndpointBlockPostErrors, ThrowOnError> => (options.client ?? client).post<BlockEndpointBlockPostResponses, BlockEndpointBlockPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/block',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Start Verification Endpoint
+ */
+export const startVerificationEndpointVerifyStartPost = <ThrowOnError extends boolean = false>(options: Options<StartVerificationEndpointVerifyStartPostData, ThrowOnError>): RequestResult<StartVerificationEndpointVerifyStartPostResponses, StartVerificationEndpointVerifyStartPostErrors, ThrowOnError> => (options.client ?? client).post<StartVerificationEndpointVerifyStartPostResponses, StartVerificationEndpointVerifyStartPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/verify/start',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Verification Status Endpoint
+ */
+export const verificationStatusEndpointVerifyStatusGet = <ThrowOnError extends boolean = false>(options?: Options<VerificationStatusEndpointVerifyStatusGetData, ThrowOnError>): RequestResult<VerificationStatusEndpointVerifyStatusGetResponses, unknown, ThrowOnError> => (options?.client ?? client).get<VerificationStatusEndpointVerifyStatusGetResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/verify/status',
+    ...options
+});
+
+/**
+ * Didit Webhook Endpoint
+ */
+export const diditWebhookEndpointVerifyWebhookPost = <ThrowOnError extends boolean = false>(options?: Options<DiditWebhookEndpointVerifyWebhookPostData, ThrowOnError>): RequestResult<DiditWebhookEndpointVerifyWebhookPostResponses, unknown, ThrowOnError> => (options?.client ?? client).post<DiditWebhookEndpointVerifyWebhookPostResponses, unknown, ThrowOnError>({ url: '/verify/webhook', ...options });
