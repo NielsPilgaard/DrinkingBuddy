@@ -1,30 +1,14 @@
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { StatusBar } from 'expo-status-bar';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { healthHealthGetOptions } from './src/api/generated/@tanstack/react-query.gen';
 import { configureApiClient } from './src/api/setup';
 import { AuthProvider, useAuth } from './src/auth/context';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { MatchScreen } from './src/screens/MatchScreen';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
 configureApiClient(API_URL);
 
 const queryClient = new QueryClient();
-
-function HealthCheck() {
-  const { data, error, isLoading } = useQuery(healthHealthGetOptions());
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>DrinkingBuddy</Text>
-      <Text>API: {API_URL}</Text>
-      {isLoading && <Text>Checking backend...</Text>}
-      {data && <Text style={styles.ok}>Backend healthy: {JSON.stringify(data)}</Text>}
-      {error && <Text style={styles.error}>Backend unreachable: {String(error)}</Text>}
-      <StatusBar style="auto" />
-    </View>
-  );
-}
 
 function Root() {
   const auth = useAuth();
@@ -33,6 +17,16 @@ function Root() {
     return (
       <View style={styles.container}>
         <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (auth.status === 'verify-suspended') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>
+          Your account is temporarily suspended pending review. Try again later.
+        </Text>
       </View>
     );
   }
@@ -48,12 +42,7 @@ function Root() {
     );
   }
 
-  return (
-    <>
-      <HealthCheck />
-      <StatusBar style="auto" />
-    </>
-  );
+  return <MatchScreen apiBaseUrl={API_URL} sessionToken={auth.sessionToken} userId={auth.userId} />;
 }
 
 export default function App() {
@@ -73,13 +62,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  ok: {
-    color: 'green',
   },
   error: {
     color: 'red',

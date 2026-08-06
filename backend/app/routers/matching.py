@@ -22,7 +22,10 @@ from app.matching.schemas import (
     WaitingEvent,
     WidenSearchPromptEvent,
 )
+from app.moderation.service import are_blocked, is_suspended
 from app.redis import get_redis
+from app.signaling.session import call_id_for_pair
+from app.verification.service import is_video_eligible
 
 router = APIRouter(tags=["matching"])
 
@@ -41,12 +44,21 @@ async def _authenticate(websocket: WebSocket, db: AsyncSession) -> uuid.UUID | N
 
 
 async def _join_and_wait(
-    websocket: WebSocket, redis: Redis, user_id: uuid.UUID, filters: Filters, *, widened: bool
+    websocket: WebSocket,
+    redis: Redis,
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    filters: Filters,
+    *,
+    widened: bool,
 ) -> uuid.UUID | None:
     """Enqueue user and wait for a match. Returns partner_id, or None on cold-start timeout."""
 
     async def _send_waiting() -> None:
         await websocket.send_json(WaitingEvent().model_dump())
+
+    async def _is_blocked_pair(a: uuid.UUID, b: uuid.UUID) -> bool:
+        return await are_blocked(db, a, b)
 
     return await find_or_wait(
         redis,
@@ -55,6 +67,7 @@ async def _join_and_wait(
         widened=widened,
         timeout_seconds=COLD_START_TIMEOUT_SECONDS,
         on_waiting=_send_waiting,
+        is_blocked_pair=_is_blocked_pair,
     )
 
 
@@ -67,6 +80,10 @@ async def matching_ws(
     user_id = await _authenticate(websocket, db)
     if user_id is None:
         await websocket.close(code=4401, reason="Not authenticated")
+        return
+
+    if await is_suspended(db, user_id):
+        await websocket.close(code=4403, reason="Account suspended")
         return
 
     await websocket.accept()
@@ -82,9 +99,9 @@ async def matching_ws(
             wait_task = None
         await dequeue(redis, user_id)
 
+    receive_task = asyncio.ensure_future(websocket.receive_json())
     try:
         while True:
-            receive_task = asyncio.ensure_future(websocket.receive_json())
             pending = {receive_task}
             if wait_task is not None:
                 pending.add(wait_task)
@@ -95,7 +112,15 @@ async def matching_ws(
                 partner_id = wait_task.result()
                 wait_task = None
                 if partner_id is not None:
-                    await websocket.send_json(MatchedEvent(partner_id=partner_id).model_dump())
+                    call_id = call_id_for_pair(user_id, partner_id)
+                    video_eligible = await is_video_eligible(
+                        db, user_id
+                    ) and await is_video_eligible(db, partner_id)
+                    await websocket.send_json(
+                        MatchedEvent(
+                            partner_id=partner_id, call_id=call_id, video_eligible=video_eligible
+                        ).model_dump(mode="json")
+                    )
                 else:
                     await websocket.send_json(WidenSearchPromptEvent().model_dump())
 
@@ -103,6 +128,7 @@ async def matching_ws(
                 continue
 
             raw = receive_task.result()
+            receive_task = asyncio.ensure_future(websocket.receive_json())
             if not isinstance(raw, dict):
                 await websocket.send_json(
                     ErrorEvent(detail="Message must be a JSON object").model_dump()
@@ -122,22 +148,32 @@ async def matching_ws(
                 current_filters = join.filters
                 wait_task = asyncio.ensure_future(
                     _join_and_wait(
-                        websocket, redis, user_id, join.filters, widened=join.widen_search
+                        websocket, redis, db, user_id, join.filters, widened=join.widen_search
                     )
                 )
 
             elif msg_type == "skip":
-                SkipMessage.model_validate(raw)
+                try:
+                    SkipMessage.model_validate(raw)
+                except ValidationError as exc:
+                    await websocket.send_json(ErrorEvent(detail=str(exc)).model_dump())
+                    continue
                 if wait_task is not None:
                     await cancel_wait()
                 if current_filters is not None:
                     await dequeue(redis, user_id)
                     wait_task = asyncio.ensure_future(
-                        _join_and_wait(websocket, redis, user_id, current_filters, widened=False)
+                        _join_and_wait(
+                            websocket, redis, db, user_id, current_filters, widened=False
+                        )
                     )
 
             elif msg_type == "leave":
-                LeaveMessage.model_validate(raw)
+                try:
+                    LeaveMessage.model_validate(raw)
+                except ValidationError as exc:
+                    await websocket.send_json(ErrorEvent(detail=str(exc)).model_dump())
+                    continue
                 if wait_task is not None:
                     await cancel_wait()
                 else:

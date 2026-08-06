@@ -9,17 +9,23 @@ import {
   useState,
 } from 'react';
 import { verifyEndpointAuthVerifyGet } from '../api/generated/sdk.gen';
-import { clearStoredSessionToken, getStoredSessionToken, setStoredSessionToken } from './storage';
+import {
+  clearStoredSessionToken,
+  getStoredSessionToken,
+  getStoredUserId,
+  setStoredSession,
+} from './storage';
 
 type AuthState =
   | { status: 'loading' }
   | { status: 'signed-out' }
   | { status: 'verifying' }
   | { status: 'verify-failed' }
-  | { status: 'signed-in'; sessionToken: string };
+  | { status: 'verify-suspended' }
+  | { status: 'signed-in'; sessionToken: string; userId: string };
 
 type AuthContextValue = AuthState & {
-  signIn: (sessionToken: string) => Promise<void>;
+  signIn: (sessionToken: string, userId: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -38,9 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // clobbering 'verifying'/'signed-in' state with a stale stored session.
   const verificationStarted = useRef(false);
 
-  async function signIn(sessionToken: string) {
-    await setStoredSessionToken(sessionToken);
-    setState({ status: 'signed-in', sessionToken });
+  async function signIn(sessionToken: string, userId: string) {
+    await setStoredSession(sessionToken, userId);
+    setState({ status: 'signed-in', sessionToken, userId });
   }
 
   async function signOut() {
@@ -51,13 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verify = useCallback(async (token: string) => {
     verificationStarted.current = true;
     setState({ status: 'verifying' });
-    const { data, error } = await verifyEndpointAuthVerifyGet({ query: { token } });
+    const { data, error, response } = await verifyEndpointAuthVerifyGet({ query: { token } });
     if (error || !data) {
-      setState({ status: 'verify-failed' });
+      setState({ status: response?.status === 403 ? 'verify-suspended' : 'verify-failed' });
       return;
     }
-    await setStoredSessionToken(data.session_token);
-    setState({ status: 'signed-in', sessionToken: data.session_token });
+    await setStoredSession(data.session_token, data.user_id);
+    setState({ status: 'signed-in', sessionToken: data.session_token, userId: data.user_id });
   }, []);
 
   useEffect(() => {
@@ -73,11 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const storedToken = await getStoredSessionToken();
+      const storedUserId = await getStoredUserId();
       // A 'url' event may have started verification while getStoredSessionToken()
       // was in flight — don't overwrite that newer state with the stored token.
       if (verificationStarted.current) return;
       setState(
-        storedToken ? { status: 'signed-in', sessionToken: storedToken } : { status: 'signed-out' },
+        storedToken && storedUserId
+          ? { status: 'signed-in', sessionToken: storedToken, userId: storedUserId }
+          : { status: 'signed-out' },
       );
     }
     restore();
