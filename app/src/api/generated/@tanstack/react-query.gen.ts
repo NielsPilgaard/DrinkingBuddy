@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { healthHealthGet, type Options, requestLinkEndpointAuthRequestLinkPost, verifyEndpointAuthVerifyGet } from '../sdk.gen';
-import type { HealthHealthGetData, HealthHealthGetResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetError, VerifyEndpointAuthVerifyGetResponse } from '../types.gen';
+import { blockEndpointBlockPost, diditWebhookEndpointVerifyWebhookPost, healthHealthGet, logoutEndpointAuthLogoutPost, type Options, reportEndpointReportPost, requestLinkEndpointAuthRequestLinkPost, startVerificationEndpointVerifyStartPost, verificationStatusEndpointVerifyStatusGet, verifyEndpointAuthVerifyGet } from '../sdk.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostError, BlockEndpointBlockPostResponse, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponse, HealthHealthGetData, HealthHealthGetResponse, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponse, ReportEndpointReportPostData, ReportEndpointReportPostError, ReportEndpointReportPostResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostError, StartVerificationEndpointVerifyStartPostResponse, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponse, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetError, VerifyEndpointAuthVerifyGetResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -91,3 +91,106 @@ export const verifyEndpointAuthVerifyGetOptions = (options: Options<VerifyEndpoi
     },
     queryKey: verifyEndpointAuthVerifyGetQueryKey(options)
 });
+
+/**
+ * Logout Endpoint
+ */
+export const logoutEndpointAuthLogoutPostMutation = (options?: Partial<Options<LogoutEndpointAuthLogoutPostData>>): UseMutationOptions<LogoutEndpointAuthLogoutPostResponse, DefaultError, Options<LogoutEndpointAuthLogoutPostData>> => {
+    const mutationOptions: UseMutationOptions<LogoutEndpointAuthLogoutPostResponse, DefaultError, Options<LogoutEndpointAuthLogoutPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await logoutEndpointAuthLogoutPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Report Endpoint
+ */
+export const reportEndpointReportPostMutation = (options?: Partial<Options<ReportEndpointReportPostData>>): UseMutationOptions<ReportEndpointReportPostResponse, ReportEndpointReportPostError, Options<ReportEndpointReportPostData>> => {
+    const mutationOptions: UseMutationOptions<ReportEndpointReportPostResponse, ReportEndpointReportPostError, Options<ReportEndpointReportPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await reportEndpointReportPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Block Endpoint
+ */
+export const blockEndpointBlockPostMutation = (options?: Partial<Options<BlockEndpointBlockPostData>>): UseMutationOptions<BlockEndpointBlockPostResponse, BlockEndpointBlockPostError, Options<BlockEndpointBlockPostData>> => {
+    const mutationOptions: UseMutationOptions<BlockEndpointBlockPostResponse, BlockEndpointBlockPostError, Options<BlockEndpointBlockPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await blockEndpointBlockPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Start Verification Endpoint
+ */
+export const startVerificationEndpointVerifyStartPostMutation = (options?: Partial<Options<StartVerificationEndpointVerifyStartPostData>>): UseMutationOptions<StartVerificationEndpointVerifyStartPostResponse, StartVerificationEndpointVerifyStartPostError, Options<StartVerificationEndpointVerifyStartPostData>> => {
+    const mutationOptions: UseMutationOptions<StartVerificationEndpointVerifyStartPostResponse, StartVerificationEndpointVerifyStartPostError, Options<StartVerificationEndpointVerifyStartPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await startVerificationEndpointVerifyStartPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const verificationStatusEndpointVerifyStatusGetQueryKey = (options?: Options<VerificationStatusEndpointVerifyStatusGetData>) => createQueryKey('verificationStatusEndpointVerifyStatusGet', options);
+
+/**
+ * Verification Status Endpoint
+ */
+export const verificationStatusEndpointVerifyStatusGetOptions = (options?: Options<VerificationStatusEndpointVerifyStatusGetData>) => queryOptions<VerificationStatusEndpointVerifyStatusGetResponse, DefaultError, VerificationStatusEndpointVerifyStatusGetResponse, ReturnType<typeof verificationStatusEndpointVerifyStatusGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await verificationStatusEndpointVerifyStatusGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: verificationStatusEndpointVerifyStatusGetQueryKey(options)
+});
+
+/**
+ * Didit Webhook Endpoint
+ */
+export const diditWebhookEndpointVerifyWebhookPostMutation = (options?: Partial<Options<DiditWebhookEndpointVerifyWebhookPostData>>): UseMutationOptions<DiditWebhookEndpointVerifyWebhookPostResponse, DefaultError, Options<DiditWebhookEndpointVerifyWebhookPostData>> => {
+    const mutationOptions: UseMutationOptions<DiditWebhookEndpointVerifyWebhookPostResponse, DefaultError, Options<DiditWebhookEndpointVerifyWebhookPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await diditWebhookEndpointVerifyWebhookPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

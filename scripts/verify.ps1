@@ -34,9 +34,14 @@ function Invoke-Step {
 $backend = Join-Path $repoRoot 'backend'
 $app = Join-Path $repoRoot 'app'
 
+Invoke-Step -Name 'ruff format (backend, autofix)' -WorkingDir $backend -Exe 'uv' -Arguments @('run', 'ruff', 'format', '.')
+Invoke-Step -Name 'ruff check --fix (backend, autofix)' -WorkingDir $backend -Exe 'uv' -Arguments @('run', 'ruff', 'check', '--fix', '.')
+
 Invoke-Step -Name 'ruff check (backend)' -WorkingDir $backend -Exe 'uv' -Arguments @('run', 'ruff', 'check', '.')
 Invoke-Step -Name 'ruff format --check (backend)' -WorkingDir $backend -Exe 'uv' -Arguments @('run', 'ruff', 'format', '--check', '.')
 Invoke-Step -Name 'ty check (backend)' -WorkingDir $backend -Exe 'uv' -Arguments @('run', 'ty', 'check')
+
+Invoke-Step -Name 'biome check --write (app, autofix)' -WorkingDir $app -Exe 'npx' -Arguments @('biome', 'check', '--write', '.')
 
 Invoke-Step -Name 'biome check (app)' -WorkingDir $app -Exe 'npx' -Arguments @('biome', 'check', '.')
 Invoke-Step -Name 'tsc --noEmit (app)' -WorkingDir $app -Exe 'npx' -Arguments @('tsc', '--noEmit')
