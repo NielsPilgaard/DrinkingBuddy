@@ -27,6 +27,8 @@ class LeaveMessage(BaseModel):
 class MatchedEvent(BaseModel):
     type: Literal["matched"] = "matched"
     partner_id: uuid.UUID
+    call_id: str
+    video_eligible: bool
 
 
 class WaitingEvent(BaseModel):

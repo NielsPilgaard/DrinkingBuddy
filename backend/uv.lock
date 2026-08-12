@@ -360,6 +360,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "opentelemetry-instrumentation-logging" },
@@ -375,7 +376,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "httpx2", extra = ["ws"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -391,7 +391,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=44.0" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.139" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "httpx2", extras = ["ws"], marker = "extra == 'dev'", specifier = ">=0.1" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.43" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.64b0" },

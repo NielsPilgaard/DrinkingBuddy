@@ -9,7 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "associatedDomains": ["applinks:app.drinking-buddy.app"]
+      "associatedDomains": ["applinks:app.drinking-buddy.app"],
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera access is needed for video calls.",
+        "NSMicrophoneUsageDescription": "Microphone access is needed for calls."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,11 +32,22 @@
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
-      ]
+      ],
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": [
+      "expo-secure-store",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Camera access is needed for video calls.",
+          "microphonePermission": "Microphone access is needed for calls."
+        }
+      ],
+      "@didit-protocol/sdk-react-native"
+    ]
   }
 }
