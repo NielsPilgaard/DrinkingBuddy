@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { configureApiClient } from './src/api/setup';
 import { AuthProvider, useAuth } from './src/auth/context';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -27,6 +27,17 @@ function Root() {
         <Text style={styles.error}>
           Your account is temporarily suspended pending review. Try again later.
         </Text>
+      </View>
+    );
+  }
+
+  if (auth.status === 'locked') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Unlock to continue</Text>
+        <Pressable style={styles.button} onPress={auth.retryUnlock}>
+          <Text style={styles.buttonText}>Try again</Text>
+        </Pressable>
       </View>
     );
   }
@@ -67,5 +78,19 @@ const styles = StyleSheet.create({
     color: 'red',
     textAlign: 'center',
     paddingHorizontal: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  button: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
