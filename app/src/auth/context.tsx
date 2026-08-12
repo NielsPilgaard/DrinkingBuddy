@@ -1,4 +1,5 @@
 import * as Linking from 'expo-linking';
+import * as LocalAuthentication from 'expo-local-authentication';
 import {
   createContext,
   type ReactNode,
@@ -22,12 +23,26 @@ type AuthState =
   | { status: 'verifying' }
   | { status: 'verify-failed' }
   | { status: 'verify-suspended' }
+  | { status: 'locked'; sessionToken: string; userId: string }
   | { status: 'signed-in'; sessionToken: string; userId: string };
 
 type AuthContextValue = AuthState & {
   signIn: (sessionToken: string, userId: string) => Promise<void>;
   signOut: () => Promise<void>;
+  retryUnlock: () => Promise<void>;
 };
+
+// When true, biometric unlock is mandatory and the OS passcode/PIN fallback
+// is disabled; when false, the device fallback stays available.
+const REQUIRE_BIOMETRIC_UNLOCK = false;
+
+async function deviceCanGate(): Promise<boolean> {
+  const [hasHardware, isEnrolled] = await Promise.all([
+    LocalAuthentication.hasHardwareAsync(),
+    LocalAuthentication.isEnrolledAsync(),
+  ]);
+  return hasHardware && isEnrolled;
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -52,6 +67,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await clearStoredSessionToken();
     setState({ status: 'signed-out' });
+  }
+
+  const unlock = useCallback(async (sessionToken: string, userId: string) => {
+    const canGate = await deviceCanGate();
+    // Magic-link verification may have started (or finished) while the
+    // above await was in flight — a stale stored-session unlock must not
+    // clobber that newer state.
+    if (verificationStarted.current) return;
+    if (!canGate) {
+      setState({ status: 'signed-in', sessionToken, userId });
+      return;
+    }
+    const result = await LocalAuthentication.authenticateAsync({
+      disableDeviceFallback: REQUIRE_BIOMETRIC_UNLOCK,
+    });
+    if (verificationStarted.current) return;
+    if (result.success) {
+      setState({ status: 'signed-in', sessionToken, userId });
+    } else {
+      setState({ status: 'locked', sessionToken, userId });
+    }
+  }, []);
+
+  async function retryUnlock() {
+    if (state.status !== 'locked') return;
+    await unlock(state.sessionToken, state.userId);
   }
 
   const verify = useCallback(async (token: string) => {
@@ -83,11 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A 'url' event may have started verification while getStoredSessionToken()
       // was in flight — don't overwrite that newer state with the stored token.
       if (verificationStarted.current) return;
-      setState(
-        storedToken && storedUserId
-          ? { status: 'signed-in', sessionToken: storedToken, userId: storedUserId }
-          : { status: 'signed-out' },
-      );
+      if (storedToken && storedUserId) {
+        await unlock(storedToken, storedUserId);
+      } else {
+        setState({ status: 'signed-out' });
+      }
     }
     restore();
 
@@ -97,10 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.remove();
-  }, [verify]);
+  }, [verify, unlock]);
 
   return (
-    <AuthContext.Provider value={{ ...state, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ ...state, signIn, signOut, retryUnlock }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

@@ -12,7 +12,8 @@
       "associatedDomains": ["applinks:app.drinking-buddy.app"],
       "infoPlist": {
         "NSCameraUsageDescription": "Camera access is needed for video calls.",
-        "NSMicrophoneUsageDescription": "Microphone access is needed for calls."
+        "NSMicrophoneUsageDescription": "Microphone access is needed for calls.",
+        "NSFaceIDUsageDescription": "Face ID confirms it's you before restoring your session."
       }
     },
     "android": {
@@ -40,6 +41,7 @@
     },
     "plugins": [
       "expo-secure-store",
+      "expo-local-authentication",
       [
         "@config-plugins/react-native-webrtc",
         {
