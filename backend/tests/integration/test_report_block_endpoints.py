@@ -42,12 +42,13 @@ async def test_report_endpoint_requires_auth(client):
 @pytest.mark.asyncio
 async def test_report_endpoint_succeeds_for_authenticated_user(client, monkeypatch):
     token, _ = await _signup_and_get_token(client, monkeypatch, "reporter@example.com")
+    _, reported_id = await _signup_and_get_token(client, monkeypatch, "reported@example.com")
 
     response = await client.post(
         "/report",
         headers={"Authorization": f"Bearer {token}"},
         json={
-            "reported_id": str(uuid.uuid4()),
+            "reported_id": str(reported_id),
             "call_session_id": "call-1",
             "reason": "harassment",
         },
@@ -58,7 +59,7 @@ async def test_report_endpoint_succeeds_for_authenticated_user(client, monkeypat
 @pytest.mark.asyncio
 async def test_block_endpoint_creates_block_row(client, db_session, monkeypatch):
     token, blocker_id = await _signup_and_get_token(client, monkeypatch, "blocker-http@example.com")
-    blocked_id = uuid.uuid4()
+    _, blocked_id = await _signup_and_get_token(client, monkeypatch, "blocked-http@example.com")
 
     response = await client.post(
         "/block",
@@ -106,7 +107,7 @@ async def test_block_endpoint_rejects_self_block(client, monkeypatch):
 @pytest.mark.asyncio
 async def test_block_endpoint_is_idempotent(client, db_session, monkeypatch):
     token, blocker_id = await _signup_and_get_token(client, monkeypatch, "dupe-blocker@example.com")
-    blocked_id = uuid.uuid4()
+    _, blocked_id = await _signup_and_get_token(client, monkeypatch, "dupe-blocked@example.com")
 
     for _ in range(2):
         response = await client.post(
