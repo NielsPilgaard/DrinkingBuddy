@@ -5,13 +5,32 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.service import get_user_for_session_token
-from app.chat_safety.service import clear_call_state, scan_chat_message
+from app.chat_safety.service import clear_call_state as clear_chat_safety_state
+from app.chat_safety.service import scan_chat_message
 from app.db import get_db
+from app.mini_games import service as mini_games_service
+from app.mini_games.schemas import (
+    GameAcceptMessage,
+    GameClosedEvent,
+    GameCloseMessage,
+    GameDeclinedEvent,
+    GameDeclineMessage,
+    GameInviteEvent,
+    GameNextMessage,
+    GamePromptEvent,
+    GameRevealedEvent,
+    GameRevealMessage,
+    GameStartedEvent,
+    GameStartMessage,
+    InboundGameMessage,
+    PublicGamePrompt,
+)
 from app.signaling.registry import CallFullError, call_registry
 from app.signaling.schemas import (
     AnswerMessage,
     ChatMessage,
     ErrorEvent,
+    IceBreakerMessage,
     IceCandidateMessage,
     InboundMessage,
     OfferMessage,
@@ -28,12 +47,19 @@ router = APIRouter(tags=["signaling"])
 
 _db_dependency = Depends(get_db)
 
-_MESSAGE_TYPES: dict[str, type[InboundMessage]] = {
+_MESSAGE_TYPES: dict[str, type[InboundMessage | InboundGameMessage]] = {
     "offer": OfferMessage,
     "answer": AnswerMessage,
     "ice_candidate": IceCandidateMessage,
     "chat": ChatMessage,
+    "ice_breaker": IceBreakerMessage,
     "video_status_request": VideoStatusRequestMessage,
+    "game_start": GameStartMessage,
+    "game_accept": GameAcceptMessage,
+    "game_decline": GameDeclineMessage,
+    "game_next": GameNextMessage,
+    "game_reveal": GameRevealMessage,
+    "game_close": GameCloseMessage,
 }
 
 
@@ -143,6 +169,88 @@ async def signaling_ws(
                     text=message.text,
                 )
 
+            if isinstance(message, GameStartMessage):
+                # Structured control data, not freeform text - deliberately
+                # not run through scan_chat_message (tasks/mini-games.md).
+                mini_games_service.start_game(call_id, message.game_type, user_id)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(
+                        GameInviteEvent(
+                            game_type=message.game_type, from_user_id=user_id
+                        ).model_dump(mode="json")
+                    )
+                continue
+
+            if isinstance(message, GameAcceptMessage):
+                pending = mini_games_service.get_session(call_id)
+                if pending is None or pending.requested_by == user_id:
+                    continue
+                session = mini_games_service.accept_game(call_id)
+                if session is None:
+                    continue
+                prompt = await mini_games_service.pick_next_prompt(db, session)
+                if prompt is None:
+                    continue
+                event = GameStartedEvent(
+                    game_type=session.game_type, prompt=PublicGamePrompt.from_prompt(prompt)
+                ).model_dump(mode="json")
+                await websocket.send_json(event)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(event)
+                continue
+
+            if isinstance(message, GameDeclineMessage):
+                pending = mini_games_service.get_session(call_id)
+                if pending is None or pending.requested_by == user_id:
+                    continue
+                mini_games_service.close_game(call_id)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(GameDeclinedEvent().model_dump())
+                continue
+
+            if isinstance(message, GameNextMessage):
+                session = mini_games_service.get_session(call_id)
+                if session is None or not session.accepted:
+                    continue
+                prompt = await mini_games_service.pick_next_prompt(db, session)
+                if prompt is None:
+                    continue
+                event = GamePromptEvent(prompt=PublicGamePrompt.from_prompt(prompt)).model_dump(
+                    mode="json"
+                )
+                await websocket.send_json(event)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(event)
+                continue
+
+            if isinstance(message, GameRevealMessage):
+                session = mini_games_service.get_session(call_id)
+                if session is None or not session.accepted:
+                    continue
+                session.revealed = True
+                correct_option = (
+                    session.current_prompt.correct_option if session.current_prompt else None
+                )
+                event = GameRevealedEvent(correct_option=correct_option).model_dump()
+                await websocket.send_json(event)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(event)
+                continue
+
+            if isinstance(message, GameCloseMessage):
+                mini_games_service.close_game(call_id)
+                event = GameClosedEvent().model_dump()
+                await websocket.send_json(event)
+                peer_socket = call_registry.peer_socket(call_id, user_id)
+                if peer_socket is not None:
+                    await peer_socket.send_json(event)
+                continue
+
             peer_socket = call_registry.peer_socket(call_id, user_id)
             if peer_socket is not None:
                 envelope = RelayEnvelope(from_user_id=user_id, message=message)
@@ -153,7 +261,8 @@ async def signaling_ws(
     finally:
         left = call_registry.leave(call_id, user_id, websocket)
         if left:
-            clear_call_state(call_id)
+            clear_chat_safety_state(call_id)
+            mini_games_service.clear_call_state(call_id)
             peer_socket = call_registry.peer_socket(call_id, user_id)
             if peer_socket is not None:
                 await peer_socket.send_json(PeerLeftEvent().model_dump())

@@ -57,19 +57,24 @@ export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenPro
         partnerId={match.partnerId}
         isInitiator={match.isInitiator}
         videoEligible={match.videoEligible}
+        drinkType={DEFAULT_FILTERS.drink_type}
         onCallEnded={() => setEndedMatch(match)}
       />
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="match-screen">
       <ActivityIndicator />
       <Text style={styles.status}>
         {status === 'widen_prompt' ? 'No match yet — widen search?' : 'Looking for a match…'}
       </Text>
       {status === 'widen_prompt' && (
-        <Pressable style={styles.button} onPress={() => widenSearch(DEFAULT_FILTERS)}>
+        <Pressable
+          testID="match-widen-search-button"
+          style={styles.button}
+          onPress={() => widenSearch(DEFAULT_FILTERS)}
+        >
           <Text style={styles.buttonText}>Widen search</Text>
         </Pressable>
       )}

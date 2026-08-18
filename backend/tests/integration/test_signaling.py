@@ -3,8 +3,10 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from httpx2.websockets import HTTPXWSException
+from sqlalchemy import select
 
 import app.auth.service as auth_service
+from app.models.chat_safety import FlaggedMessage
 from app.signaling.session import call_id_for_pair
 
 pytestmark = pytest.mark.integration
@@ -99,6 +101,63 @@ async def test_chat_messages_are_relayed_server_side(ws_client, monkeypatch):
             assert chat["message"]["type"] == "chat"
             assert chat["message"]["text"] == "hello there"
             assert chat["from_user_id"] == str(user_a_id)
+
+
+@pytest.mark.asyncio
+async def test_ice_breaker_relays_and_bypasses_chat_safety_scan(ws_client, monkeypatch, db_session):
+    """Confirms a valid allowlisted ice_breaker prompt is relayed like chat
+    but never runs through scan_chat_message (tasks/ice-breaker.md)."""
+    token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "quinn@example.com")
+    token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "ray@example.com")
+    call_id = call_id_for_pair(user_a_id, user_b_id)
+
+    prompt = "Dogs, cats, or neither?"
+
+    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+        await ws_a.receive_json()  # turn creds
+
+        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+            await ws_b.receive_json()  # turn creds
+            await ws_b.receive_json()  # peer_joined
+            await ws_a.receive_json()  # peer_joined
+
+            await ws_a.send_json({"type": "ice_breaker", "text": prompt})
+            relayed = await ws_b.receive_json()
+            assert relayed["message"]["type"] == "ice_breaker"
+            assert relayed["message"]["text"] == prompt
+            assert relayed["from_user_id"] == str(user_a_id)
+
+    result = await db_session.execute(select(FlaggedMessage))
+    assert result.scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_ice_breaker_rejects_unallowlisted_text(ws_client, monkeypatch, db_session):
+    """A client sending freeform text under the ice_breaker type (rather
+    than one of the pre-vetted static prompts) must be rejected, not relayed
+    - the ice_breaker channel is deliberately exempt from chat_safety
+    scanning, so it must not become a way to smuggle arbitrary text past the
+    filter (tasks/ice-breaker.md)."""
+    token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "sybil@example.com")
+    token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "trent@example.com")
+    call_id = call_id_for_pair(user_a_id, user_b_id)
+
+    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+        await ws_a.receive_json()  # turn creds
+
+        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+            await ws_b.receive_json()  # turn creds
+            await ws_b.receive_json()  # peer_joined
+            await ws_a.receive_json()  # peer_joined
+
+            await ws_a.send_json({"type": "ice_breaker", "text": "let's meet up this weekend"})
+            error = await ws_a.receive_json()
+            assert error["type"] == "error"
+
+            # Nothing was relayed to B for the rejected message.
+            await ws_a.send_json({"type": "chat", "text": "proof B's queue is otherwise empty"})
+            chat = await ws_b.receive_json()
+            assert chat["message"]["type"] == "chat"
 
 
 @pytest.mark.asyncio

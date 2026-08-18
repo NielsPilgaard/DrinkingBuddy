@@ -1,7 +1,9 @@
 import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.signaling.ice_breakers import ICE_BREAKERS
 
 
 class OfferMessage(BaseModel):
@@ -22,6 +24,24 @@ class IceCandidateMessage(BaseModel):
 class ChatMessage(BaseModel):
     type: Literal["chat"] = "chat"
     text: str
+
+
+class IceBreakerMessage(BaseModel):
+    """Relayed like chat but never scanned by chat_safety - content must be
+    one of the pre-vetted static prompts in ice_breakers.ICE_BREAKERS, not
+    freeform input (tasks/ice-breaker.md). Validated against that allowlist
+    below so a client can't smuggle arbitrary text through the channel
+    that's deliberately exempt from the chat-safety filter."""
+
+    type: Literal["ice_breaker"] = "ice_breaker"
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def _text_must_be_allowlisted(cls, value: str) -> str:
+        if value not in ICE_BREAKERS:
+            raise ValueError("ice_breaker text is not a recognized prompt")
+        return value
 
 
 class VideoStatusRequestMessage(BaseModel):
@@ -46,7 +66,9 @@ class ErrorEvent(BaseModel):
     detail: str
 
 
-RelayedFromPeer = OfferMessage | AnswerMessage | IceCandidateMessage | ChatMessage
+RelayedFromPeer = (
+    OfferMessage | AnswerMessage | IceCandidateMessage | ChatMessage | IceBreakerMessage
+)
 InboundMessage = RelayedFromPeer | VideoStatusRequestMessage
 
 

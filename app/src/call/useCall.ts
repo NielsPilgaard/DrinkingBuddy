@@ -6,11 +6,24 @@ import {
   RTCPeerConnection,
   RTCSessionDescription,
 } from 'react-native-webrtc';
-import { type IceServer, type OutgoingMessage, SignalingClient, signalingWsUrl } from './signaling';
+import { ICE_BREAKERS } from '../content/iceBreakers';
+import {
+  type GamePrompt,
+  type GameType,
+  type IceServer,
+  type OutgoingMessage,
+  SignalingClient,
+  signalingWsUrl,
+} from './signaling';
 
 export type CallStatus = 'connecting' | 'waiting_for_peer' | 'in_call' | 'ended' | 'failed';
 
-export type ChatEntry = { id: string; fromSelf: boolean; text: string };
+export type ChatEntry = {
+  id: string;
+  fromSelf: boolean;
+  text: string;
+  kind: 'chat' | 'ice_breaker';
+};
 
 let nextChatEntryId = 0;
 function makeChatEntryId(): string {
@@ -52,6 +65,14 @@ export function useCall({
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [chatLog, setChatLog] = useState<ChatEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [gameInvite, setGameInvite] = useState<{ gameType: GameType; fromSelf: boolean } | null>(
+    null,
+  );
+  const [activeGame, setActiveGame] = useState<{
+    gameType: GameType;
+    prompt: GamePrompt;
+    revealed: boolean;
+  } | null>(null);
 
   const signalingRef = useRef<SignalingClient | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -82,7 +103,64 @@ export function useCall({
     if (!signalingRef.current) return;
     const message: OutgoingMessage = { type: 'chat', text };
     signalingRef.current.send(message);
-    setChatLog((log) => [...log, { id: makeChatEntryId(), fromSelf: true, text }]);
+    setChatLog((log) => [...log, { id: makeChatEntryId(), fromSelf: true, text, kind: 'chat' }]);
+  }, []);
+
+  // Shown-prompt dedup for the current call only (tasks/ice-breaker.md) -
+  // resets every new match since this hook is torn down with CallScreen.
+  const shownIceBreakersRef = useRef<Set<string>>(new Set());
+
+  const sendIceBreaker = useCallback(() => {
+    if (!signalingRef.current) return;
+    let pool: readonly string[] = ICE_BREAKERS.filter(
+      (prompt) => !shownIceBreakersRef.current.has(prompt),
+    );
+    if (pool.length === 0) {
+      shownIceBreakersRef.current.clear();
+      pool = ICE_BREAKERS;
+    }
+    const text = pool[Math.floor(Math.random() * pool.length)];
+    if (!text) return;
+    shownIceBreakersRef.current.add(text);
+
+    const message: OutgoingMessage = { type: 'ice_breaker', text };
+    signalingRef.current.send(message);
+    setChatLog((log) => [
+      ...log,
+      { id: makeChatEntryId(), fromSelf: true, text, kind: 'ice_breaker' },
+    ]);
+  }, []);
+
+  const startGame = useCallback((gameType: GameType) => {
+    if (!signalingRef.current) return;
+    signalingRef.current.send({ type: 'game_start', game_type: gameType });
+    setGameInvite({ gameType, fromSelf: true });
+  }, []);
+
+  const acceptGame = useCallback(() => {
+    if (!signalingRef.current) return;
+    signalingRef.current.send({ type: 'game_accept' });
+    setGameInvite(null);
+  }, []);
+
+  const declineGame = useCallback(() => {
+    if (!signalingRef.current) return;
+    signalingRef.current.send({ type: 'game_decline' });
+    setGameInvite(null);
+  }, []);
+
+  const nextGamePrompt = useCallback(() => {
+    signalingRef.current?.send({ type: 'game_next' });
+  }, []);
+
+  const revealGamePrompt = useCallback(() => {
+    signalingRef.current?.send({ type: 'game_reveal' });
+  }, []);
+
+  const closeGame = useCallback(() => {
+    signalingRef.current?.send({ type: 'game_close' });
+    setActiveGame(null);
+    setGameInvite(null);
   }, []);
 
   const requestFreshVideoEligibility = useCallback((): Promise<boolean> => {
@@ -159,6 +237,8 @@ export function useCall({
     localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
+    setGameInvite(null);
+    setActiveGame(null);
     setStatus('ended');
   }, [settleVideoStatusRequest]);
 
@@ -255,6 +335,44 @@ export function useCall({
         }
       };
 
+      activeSignaling.onGameEvent = (event) => {
+        if (event.type === 'game_invite') {
+          setGameInvite({ gameType: event.game_type, fromSelf: false });
+        } else if (event.type === 'game_declined') {
+          setGameInvite(null);
+        } else if (event.type === 'game_started') {
+          setGameInvite(null);
+          setActiveGame({
+            gameType: event.game_type,
+            prompt: { ...event.prompt, correct_option: null },
+            revealed: false,
+          });
+        } else if (event.type === 'game_prompt') {
+          setActiveGame((current) =>
+            current
+              ? {
+                  ...current,
+                  prompt: { ...event.prompt, correct_option: null },
+                  revealed: event.revealed,
+                }
+              : current,
+          );
+        } else if (event.type === 'game_revealed') {
+          setActiveGame((current) =>
+            current
+              ? {
+                  ...current,
+                  revealed: true,
+                  prompt: { ...current.prompt, correct_option: event.correct_option },
+                }
+              : current,
+          );
+        } else if (event.type === 'game_closed') {
+          setActiveGame(null);
+          setGameInvite(null);
+        }
+      };
+
       activeSignaling.onRelayed = async (_from, message) => {
         const pc = peerConnectionRef.current;
         if (!pc) return;
@@ -288,7 +406,12 @@ export function useCall({
         } else if (message.type === 'chat') {
           setChatLog((log) => [
             ...log,
-            { id: makeChatEntryId(), fromSelf: false, text: message.text },
+            { id: makeChatEntryId(), fromSelf: false, text: message.text, kind: 'chat' },
+          ]);
+        } else if (message.type === 'ice_breaker') {
+          setChatLog((log) => [
+            ...log,
+            { id: makeChatEntryId(), fromSelf: false, text: message.text, kind: 'ice_breaker' },
           ]);
         }
       };
@@ -321,6 +444,15 @@ export function useCall({
     audioEnabled,
     chatLog,
     sendChat,
+    sendIceBreaker,
+    gameInvite,
+    activeGame,
+    startGame,
+    acceptGame,
+    declineGame,
+    nextGamePrompt,
+    revealGamePrompt,
+    closeGame,
     toggleVideo,
     toggleAudio,
     endCall,

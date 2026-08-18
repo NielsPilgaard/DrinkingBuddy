@@ -1,5 +1,6 @@
 from app.models.block import Block
 from app.models.chat_safety import ChatSafetyAuditLog, ChatSafetyPattern, FlaggedMessage
+from app.models.game_prompt import GamePrompt
 from app.models.magic_link_token import MagicLinkToken
 from app.models.report import Report
 from app.models.session import Session
@@ -12,6 +13,7 @@ __all__ = [
     "ChatSafetyAuditLog",
     "ChatSafetyPattern",
     "FlaggedMessage",
+    "GamePrompt",
     "MagicLinkToken",
     "Report",
     "Session",

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RTCView } from 'react-native-webrtc';
+import { DrinkCounter } from '../call/DrinkCounter';
+import { GameDrawer } from '../call/GameDrawer';
 import { ReportBlockSheet } from '../call/ReportBlockSheet';
 import { useCall } from '../call/useCall';
 import { useVerification } from '../verification/useVerification';
@@ -12,6 +14,7 @@ type CallScreenProps = {
   partnerId: string;
   isInitiator: boolean;
   videoEligible: boolean;
+  drinkType: 'alcoholic' | 'non_alcoholic';
   onCallEnded: () => void;
 };
 
@@ -22,6 +25,7 @@ export function CallScreen({
   partnerId,
   isInitiator,
   videoEligible,
+  drinkType,
   onCallEnded,
 }: CallScreenProps) {
   const {
@@ -32,6 +36,15 @@ export function CallScreen({
     audioEnabled,
     chatLog,
     sendChat,
+    sendIceBreaker,
+    gameInvite,
+    activeGame,
+    startGame,
+    acceptGame,
+    declineGame,
+    nextGamePrompt,
+    revealGamePrompt,
+    closeGame,
     toggleVideo,
     toggleAudio,
     endCall,
@@ -45,9 +58,11 @@ export function CallScreen({
   const verification = useVerification();
 
   const [chatOpen, setChatOpen] = useState(false);
+  const [gameOpen, setGameOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [verifyPromptOpen, setVerifyPromptOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [controlsHeight, setControlsHeight] = useState(96);
   const callEndedRef = useRef(false);
   const onCallEndedRef = useRef(onCallEnded);
   onCallEndedRef.current = onCallEnded;
@@ -94,8 +109,18 @@ export function CallScreen({
     }
   }, [verification.state]);
 
+  // Auto-open the game drawer for the receiving party's accept/decline
+  // prompt, and keep it open through the synced round - tasks/mini-games.md
+  // requires the invite to surface without the receiver having tapped
+  // anything first.
+  useEffect(() => {
+    if (gameInvite || activeGame) {
+      setGameOpen(true);
+    }
+  }, [gameInvite, activeGame]);
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="call-screen">
       {remoteStream ? (
         <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
       ) : (
@@ -110,17 +135,48 @@ export function CallScreen({
         <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" />
       )}
 
-      {chatOpen && (
-        <View style={styles.chatDrawer}>
+      <DrinkCounter drinkType={drinkType} />
+
+      {gameOpen && (
+        <GameDrawer
+          style={{ bottom: controlsHeight }}
+          gameInvite={gameInvite}
+          activeGame={activeGame}
+          onStartGame={startGame}
+          onAcceptGame={acceptGame}
+          onDeclineGame={declineGame}
+          onNextPrompt={nextGamePrompt}
+          onRevealPrompt={revealGamePrompt}
+          onCloseGame={() => {
+            closeGame();
+            setGameOpen(false);
+          }}
+          onClose={() => setGameOpen(false)}
+        />
+      )}
+
+      {chatOpen && !gameOpen && (
+        <View style={[styles.chatDrawer, { bottom: controlsHeight }]} testID="call-chat-drawer">
           <ScrollView style={styles.chatLog}>
             {chatLog.map((entry) => (
-              <Text key={entry.id} style={entry.fromSelf ? styles.chatSelf : styles.chatPeer}>
-                {entry.text}
+              <Text
+                key={entry.id}
+                testID={entry.fromSelf ? 'call-chat-message-self' : 'call-chat-message-peer'}
+                style={[
+                  entry.fromSelf ? styles.chatSelf : styles.chatPeer,
+                  entry.kind === 'ice_breaker' && styles.chatIceBreaker,
+                ]}
+              >
+                {entry.kind === 'ice_breaker' ? `🎲 ${entry.text}` : entry.text}
               </Text>
             ))}
           </ScrollView>
           <View style={styles.chatInputRow}>
+            <Pressable style={styles.iceBreakerButton} onPress={sendIceBreaker}>
+              <Text style={styles.iceBreakerButtonText}>🎲</Text>
+            </Pressable>
             <TextInput
+              testID="call-chat-input"
               style={styles.chatInput}
               value={draft}
               onChangeText={setDraft}
@@ -128,7 +184,11 @@ export function CallScreen({
               placeholderTextColor="#8a8a96"
               onSubmitEditing={handleSend}
             />
-            <Pressable style={styles.sendButton} onPress={handleSend}>
+            <Pressable
+              testID="call-chat-send-button"
+              style={styles.sendButton}
+              onPress={handleSend}
+            >
               <Text style={styles.sendButtonText}>Send</Text>
             </Pressable>
           </View>
@@ -145,7 +205,7 @@ export function CallScreen({
       )}
 
       {verifyPromptOpen && (
-        <View style={styles.verifySheet}>
+        <View style={[styles.verifySheet, { bottom: controlsHeight }]}>
           {verification.state.kind === 'waitlisted' ? (
             <Text style={styles.verifyText}>You're on the list, we'll email you.</Text>
           ) : (
@@ -169,20 +229,52 @@ export function CallScreen({
         </View>
       )}
 
-      <View style={styles.controls}>
-        <Pressable style={styles.controlButton} onPress={toggleAudio}>
+      <View
+        style={styles.controls}
+        onLayout={(e) => setControlsHeight(e.nativeEvent.layout.height)}
+      >
+        <Pressable testID="call-mute-button" style={styles.controlButton} onPress={toggleAudio}>
           <Text style={styles.controlText}>{audioEnabled ? 'Mute' : 'Unmute'}</Text>
         </Pressable>
-        <Pressable style={styles.controlButton} onPress={handleToggleVideo}>
+        <Pressable
+          testID="call-video-button"
+          style={styles.controlButton}
+          onPress={handleToggleVideo}
+        >
           <Text style={styles.controlText}>{videoEnabled ? 'Stop video' : 'Start video'}</Text>
         </Pressable>
-        <Pressable style={styles.controlButton} onPress={() => setChatOpen((v) => !v)}>
+        <Pressable
+          testID="call-chat-toggle-button"
+          style={styles.controlButton}
+          onPress={() => {
+            setGameOpen(false);
+            setChatOpen((v) => !v);
+          }}
+        >
           <Text style={styles.controlText}>Chat</Text>
         </Pressable>
-        <Pressable style={styles.controlButton} onPress={() => setReportOpen(true)}>
+        <Pressable
+          testID="call-games-toggle-button"
+          style={styles.controlButton}
+          onPress={() => {
+            setChatOpen(false);
+            setGameOpen((v) => !v);
+          }}
+        >
+          <Text style={styles.controlText}>Games</Text>
+        </Pressable>
+        <Pressable
+          testID="call-report-button"
+          style={styles.controlButton}
+          onPress={() => setReportOpen(true)}
+        >
           <Text style={styles.controlText}>Report</Text>
         </Pressable>
-        <Pressable style={[styles.controlButton, styles.endButton]} onPress={handleEndCall}>
+        <Pressable
+          testID="call-end-button"
+          style={[styles.controlButton, styles.endButton]}
+          onPress={handleEndCall}
+        >
           <Text style={styles.controlText}>End</Text>
         </Pressable>
       </View>
@@ -258,10 +350,24 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     paddingVertical: 2,
   },
+  chatIceBreaker: {
+    color: '#8a8a96',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   chatInputRow: {
     flexDirection: 'row',
     marginTop: 8,
     gap: 8,
+  },
+  iceBreakerButton: {
+    backgroundColor: '#1f1f28',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+  },
+  iceBreakerButtonText: {
+    fontSize: 16,
   },
   chatInput: {
     flex: 1,
@@ -283,7 +389,9 @@ const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-evenly',
+    gap: 8,
     paddingVertical: 16,
     paddingBottom: 32,
     backgroundColor: '#0e0e12',
