@@ -1,6 +1,6 @@
 ---
 title: Biometric relogin gate
-status: pending
+status: completed
 last_updated: 2026-08-12
 depends_on: tasks/completed/02-auth-magic-link.md, docs/prd.md
 ---

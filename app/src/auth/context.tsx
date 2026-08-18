@@ -37,11 +37,12 @@ type AuthContextValue = AuthState & {
 const REQUIRE_BIOMETRIC_UNLOCK = false;
 
 async function deviceCanGate(): Promise<boolean> {
-  const [hasHardware, isEnrolled] = await Promise.all([
-    LocalAuthentication.hasHardwareAsync(),
-    LocalAuthentication.isEnrolledAsync(),
-  ]);
-  return hasHardware && isEnrolled;
+  // isEnrolledAsync() only reflects biometric enrollment, so a device
+  // secured with just a PIN/pattern (no fingerprint/face) would report
+  // false and silently bypass the gate. getEnrolledLevelAsync() also
+  // reports SECRET for a configured device passcode, so that must gate too.
+  const securityLevel = await LocalAuthentication.getEnrolledLevelAsync();
+  return securityLevel !== LocalAuthentication.SecurityLevel.NONE;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
