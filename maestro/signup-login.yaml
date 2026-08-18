@@ -1,0 +1,14 @@
+# Journey: request magic link -> capture token via test-mode echo -> open
+# deep link -> land on MatchScreen.
+#
+# Requires the backend running with ENVIRONMENT=test (see
+# backend/docker-compose.e2e.yml) - the X-Test-Mode header alone is not
+# enough, see app/routers/auth.py. UNVERIFIED against a live Maestro run,
+# see tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 5.
+#
+# appId inherited from maestro/config.yaml (workspace-level default).
+---
+- runFlow:
+    file: flows/signup-and-reach-match-screen.yaml
+    env:
+      USER_LABEL: "signup"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from app.auth.service import (
     revoke_session,
     verify_token,
 )
+from app.config import settings
 from app.db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -20,9 +21,16 @@ _bearer_dependency = Depends(_bearer_scheme)
 
 @router.post("/request-link", response_model=RequestLinkResponse)
 async def request_link_endpoint(
-    body: RequestLinkBody, db: AsyncSession = _db_dependency
+    body: RequestLinkBody,
+    db: AsyncSession = _db_dependency,
+    x_test_mode: str | None = Header(default=None),
 ) -> RequestLinkResponse:
-    await request_link(db, body.email, body.birthdate)
+    raw_token = await request_link(db, body.email, body.birthdate)
+    # Double-gated (environment + header) so a misconfigured deployment can't
+    # leak sign-in tokens just by one of the two being wrong - see
+    # tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+    if settings.environment == "development" and x_test_mode == "1" and raw_token is not None:
+        return RequestLinkResponse(debug_token=raw_token)
     return RequestLinkResponse()
 
 

@@ -1,0 +1,46 @@
+# Journey: two devices both find a match, land on CallScreen, exchange a
+# chat message, assert it appears on the peer's screen.
+#
+# Maestro CLI (non-Cloud) drives one device per `maestro test` invocation, as
+# far as could be determined from the docs available while implementing this
+# - true "two devices in one flow" looks like a Maestro Cloud feature. This
+# file is written to be run via `run-two-device-flow.ps1` / `.sh`, which
+# launches this same flow twice in parallel against two devices/emulators,
+# with DEVICE_ROLE selecting which side of the exchange each instance plays.
+# UNVERIFIED against a live Maestro run - see
+# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 6, please confirm before
+# relying on this.
+#
+# appId inherited from maestro/config.yaml (workspace-level default).
+---
+- runFlow:
+    file: flows/reach-call-screen.yaml
+    env:
+      USER_LABEL: ${DEVICE_ROLE}
+
+- runFlow:
+    when:
+      true: ${DEVICE_ROLE == 'a'}
+    commands:
+      - tapOn:
+          id: "call-chat-toggle-button"
+      - tapOn:
+          id: "call-chat-input"
+      - inputText: "cheers from a"
+      - tapOn:
+          id: "call-chat-send-button"
+      - assertVisible:
+          id: "call-chat-message-self"
+
+- runFlow:
+    when:
+      true: ${DEVICE_ROLE == 'b'}
+    commands:
+      - tapOn:
+          id: "call-chat-toggle-button"
+      - extendedWaitUntil:
+          visible:
+            id: "call-chat-message-peer"
+          timeout: 15000
+      - assertVisible:
+          text: "cheers from a"

@@ -12,14 +12,22 @@ export function CallEndedScreen({ partnerId, callId, onContinue }: CallEndedScre
   const [reportOpen, setReportOpen] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="call-ended-screen">
       <Text style={styles.title}>Call ended</Text>
 
-      <Pressable style={styles.reportButton} onPress={() => setReportOpen(true)}>
+      <Pressable
+        testID="call-ended-report-button"
+        style={styles.reportButton}
+        onPress={() => setReportOpen(true)}
+      >
         <Text style={styles.reportButtonText}>Report or block this person</Text>
       </Pressable>
 
-      <Pressable style={styles.continueButton} onPress={onContinue}>
+      <Pressable
+        testID="call-ended-find-next-button"
+        style={styles.continueButton}
+        onPress={onContinue}
+      >
         <Text style={styles.continueButtonText}>Find next match</Text>
       </Pressable>
 

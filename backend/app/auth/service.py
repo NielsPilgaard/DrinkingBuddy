@@ -37,7 +37,10 @@ def _mint_token(ttl: timedelta) -> tuple[str, str, datetime]:
     return raw, hash_token(raw), datetime.now(UTC) + ttl
 
 
-async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> None:
+async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> str | None:
+    """Request a magic link for `email`. Returns the raw token if one was
+    minted (None for the deliberately-silent no-op paths below) - callers
+    outside test mode must discard this and never expose it to the client."""
     normalized_email = email.strip().lower()
     result = await db.execute(select(User).where(User.email == normalized_email))
     user = result.scalar_one_or_none()
@@ -48,7 +51,7 @@ async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> 
             # (instead of raising) keeps this response indistinguishable from the
             # existing-user success path, so a caller can't use status code to
             # probe whether an email is already registered.
-            return
+            return None
         user = User(email=normalized_email, birthdate=birthdate)
         db.add(user)
         await db.flush()
@@ -72,6 +75,7 @@ async def request_link(db: AsyncSession, email: str, birthdate: date | None) -> 
         raise
 
     await db.commit()
+    return raw_token
 
 
 async def verify_token(db: AsyncSession, raw_token: str) -> tuple[str, User]:

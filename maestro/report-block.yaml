@@ -1,0 +1,55 @@
+# Journey: from an active call, open ReportBlockSheet, submit a report,
+# assert the call ends.
+#
+# Task spec (tasks/mobile-e2e-maestro.md) says "assert call ends and returns
+# to MatchScreen" - but reading app/src/screens/MatchScreen.tsx and
+# CallEndedScreen.tsx, ending a call always routes through an intermediate
+# CallEndedScreen ("Call ended" / "Find next match") first, never straight
+# back to MatchScreen. This flow asserts CallEndedScreen (what the code
+# actually does) rather than MatchScreen (what the spec says) - please
+# confirm which is intended; if MatchScreen really is the desired end state,
+# CallEndedScreen may need to be cut or auto-continue. Flagged in
+# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+#
+# Same two-device caveat as match-and-call.yaml applies - needs a peer
+# device in the queue to actually get matched into a call. Run via
+# run-two-device-flow.ps1/.sh report-block.yaml <deviceA> <deviceB>, with
+# DEVICE_ROLE=a (reports) / b (just needs to be present to be matched).
+# UNVERIFIED against a live Maestro run.
+#
+# appId inherited from maestro/config.yaml (workspace-level default).
+---
+- runFlow:
+    file: flows/reach-call-screen.yaml
+    env:
+      USER_LABEL: ${DEVICE_ROLE}
+
+- runFlow:
+    when:
+      true: ${DEVICE_ROLE == 'a'}
+    commands:
+      - tapOn:
+          id: "call-report-button"
+      - assertVisible:
+          id: "report-block-sheet"
+      - tapOn:
+          id: "report-reason-harassment"
+      - tapOn:
+          id: "report-and-block-button"
+      - extendedWaitUntil:
+          visible:
+            id: "call-ended-screen"
+          timeout: 15000
+
+- runFlow:
+    when:
+      true: ${DEVICE_ROLE == 'b'}
+    commands:
+      # The reported peer's call ends when A leaves after report+block -
+      # useCall's onPeerLeft -> endCall() -> status 'ended' (app/src/call/
+      # useCall.ts) drives CallScreen to notifyCallEnded(), which
+      # MatchScreen renders as CallEndedScreen.
+      - extendedWaitUntil:
+          visible:
+            id: "call-ended-screen"
+          timeout: 20000

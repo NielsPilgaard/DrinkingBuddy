@@ -1,0 +1,15 @@
+# Shared Maestro config.
+#
+# appId: matches app/app.json's expo.android.package. All flow files inherit
+# this value (Maestro applies the nearest config.yaml's appId/env to any
+# flow that doesn't declare its own) rather than redeclaring it individually.
+# ios.bundleIdentifier is not yet pinned in app/app.json - see
+# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+#
+# API_BASE_URL: backend reachable from the simulator/emulator, per
+# docs/local_dev.md — Android emulator: http://10.0.2.2:8000,
+# physical device: http://<host-lan-ip>:8000. Override per-run with
+# `maestro test -e API_BASE_URL=... maestro/signup-login.yaml`.
+appId: com.drinkingbuddy.app
+env:
+  API_BASE_URL: "http://10.0.2.2:8000"

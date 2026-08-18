@@ -1,0 +1,107 @@
+# On-demand Maestro E2E run, Android only (see
+# tasks/completed/mobile-e2e-maestro.md "Explicitly out of scope" -
+# cross-platform parity is not a CI gate yet). Not run per-commit: simulator
+# boot + two-device flows are slow, matching this repo's E2E-is-pre-deploy
+# testing-strategy convention.
+#
+# Two emulators run in one job (reactivecircus/android-emulator-runner
+# invoked twice, on different AVD ports) so match-and-call.yaml and
+# report-block.yaml (both two-device flows) can run in CI, not just
+# signup-login.yaml. Design decided in tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md
+# item 7a.
+#
+# APK comes from EAS Build cloud (profile "e2e" in app/eas.json - internal
+# distribution, Android APK, EXPO_PUBLIC_API_URL baked to
+# http://localhost:8000 to match how the emulators reach this job's backend
+# service, see the "Start backend" step). Requires an EXPO_TOKEN repo secret.
+#
+# This is the FIRST GitHub Actions workflow in this repo (no .github/ existed
+# before this task) - please confirm GH Actions is the intended CI system.
+name: Mobile E2E (Maestro)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-maestro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Start backend (ENVIRONMENT=development, E2E override)
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --wait
+        # NOTE: android-emulator-runner below runs emulators directly on the
+        # GH-hosted runner (not in a container), so they reach this backend
+        # via localhost, NOT 10.0.2.2 - API_BASE_URL is overridden
+        # accordingly in the maestro steps below, and baked into the EAS
+        # "e2e" build profile (app/eas.json) for the same reason.
+
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build Android app (EAS Build cloud, profile "e2e")
+        working-directory: app
+        run: |
+          eas build --platform android --profile e2e --non-interactive --wait \
+            --output ../app-e2e.apk
+
+      - name: Run Android emulators + Maestro flows
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          avd-name: e2e-device-a
+          port: 5554
+          script: |
+            adb -s emulator-5554 install app-e2e.apk
+            maestro --device emulator-5554 test maestro/signup-login.yaml \
+              -e API_BASE_URL=http://localhost:8000
+
+      - name: Run second Android emulator (device B)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          avd-name: e2e-device-b
+          port: 5556
+          script: |
+            adb -s emulator-5556 install app-e2e.apk
+
+      - name: Run two-device Maestro flows (match-and-call, report-block)
+        run: |
+          for flow in match-and-call.yaml report-block.yaml; do
+            maestro/run-two-device-flow.sh "$flow" emulator-5554 emulator-5556 \
+              http://localhost:8000
+          done
+        # UNVERIFIED: two concurrent android-emulator-runner invocations in
+        # one job (different avd-name/port per call) has not been exercised
+        # against a live run - see tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md
+        # item 7a. Confirm both emulators stay up simultaneously (the action
+        # is designed for one emulator per job; running it twice may tear
+        # down the first when the second step starts). If it doesn't work,
+        # fall back to a manual `emulator` binary invocation for device B
+        # instead of a second action call.
+
+      - name: Backend logs on failure
+        if: failure()
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml logs

@@ -33,7 +33,7 @@ function Root() {
 
   if (auth.status === 'locked') {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="app-locked-screen">
         <Text style={styles.title}>Unlock to continue</Text>
         <Pressable style={styles.button} onPress={auth.retryUnlock}>
           <Text style={styles.buttonText}>Try again</Text>

@@ -1,0 +1,39 @@
+# Subflow: sign up a fresh test user and land on MatchScreen. Shared by
+# match-and-call.yaml and report-block.yaml so the login dance isn't
+# duplicated per journey. Runs via `runFlow` with a required `userLabel`
+# input to keep concurrently-run devices' emails distinct.
+#
+# Usage from a parent flow:
+#   - runFlow:
+#       file: flows/signup-and-reach-match-screen.yaml
+#       env:
+#         USER_LABEL: "a"
+#
+# appId inherited from maestro/config.yaml (workspace-level default).
+---
+- launchApp:
+    clearState: true
+
+- evalScript: ${output.timestamp = Date.now()}
+
+- tapOn:
+    id: "login-email-input"
+- inputText: "maestro-${USER_LABEL}-${output.timestamp}@e2e.drinkingbuddy.local"
+- tapOn:
+    id: "login-birthdate-input"
+- inputText: "2000-01-01"
+
+- runScript: requestMagicLink.js
+- assertTrue: ${output.debugToken != null}
+
+- tapOn:
+    id: "login-submit-button"
+- assertVisible:
+    id: "login-link-sent"
+
+- openLink: "drinkingbuddy://verify?token=${output.debugToken}"
+
+- extendedWaitUntil:
+    visible:
+      id: "match-screen"
+    timeout: 15000

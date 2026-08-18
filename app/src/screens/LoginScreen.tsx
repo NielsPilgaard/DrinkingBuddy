@@ -47,7 +47,7 @@ export function LoginScreen() {
 
   if (linkSent) {
     return (
-      <View style={styles.container}>
+      <View style={styles.container} testID="login-link-sent">
         <Text style={styles.title}>Check your email</Text>
         <Text style={styles.subtitle}>
           We sent a sign-in link to {email.trim()}. Open it on this device to continue.
@@ -60,6 +60,7 @@ export function LoginScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>DrinkingBuddy</Text>
       <TextInput
+        testID="login-email-input"
         style={styles.input}
         placeholder="Email"
         autoCapitalize="none"
@@ -69,6 +70,7 @@ export function LoginScreen() {
         onChangeText={setEmail}
       />
       <TextInput
+        testID="login-birthdate-input"
         style={styles.input}
         placeholder="Birthdate (YYYY-MM-DD) — first time only"
         autoCapitalize="none"
@@ -77,6 +79,7 @@ export function LoginScreen() {
       />
       {error && <Text style={styles.error}>{error}</Text>}
       <Pressable
+        testID="login-submit-button"
         style={[styles.button, !canSubmit && styles.buttonDisabled]}
         onPress={handleSubmit}
         disabled={!canSubmit}

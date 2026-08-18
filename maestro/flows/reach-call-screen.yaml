@@ -1,0 +1,16 @@
+# Subflow: sign up + join matching queue, waiting on CallScreen to appear.
+# MatchScreen auto-joins with default filters on mount (app/src/screens/
+# MatchScreen.tsx), so no explicit "find match" tap is needed - both devices
+# just need to reach MatchScreen close enough in time to be paired.
+#
+# appId inherited from maestro/config.yaml (workspace-level default).
+---
+- runFlow:
+    file: signup-and-reach-match-screen.yaml
+    env:
+      USER_LABEL: ${USER_LABEL}
+
+- extendedWaitUntil:
+    visible:
+      id: "call-screen"
+    timeout: 30000

@@ -47,13 +47,20 @@ export function ReportBlockSheet({ partnerId, callId, onClose, onDone }: ReportB
   }
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      testID="report-block-sheet"
+    >
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Report this person?</Text>
           {REPORT_REASONS.map((r) => (
             <Pressable
               key={r.value}
+              testID={`report-reason-${r.value}`}
               style={[styles.reasonRow, reason === r.value && styles.reasonRowSelected]}
               onPress={() => setReason(r.value)}
             >
@@ -64,13 +71,24 @@ export function ReportBlockSheet({ partnerId, callId, onClose, onDone }: ReportB
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelButton} onPress={onClose} disabled={submitting}>
+            <Pressable
+              testID="report-cancel-button"
+              style={styles.cancelButton}
+              onPress={onClose}
+              disabled={submitting}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.blockButton} onPress={handleBlockOnly} disabled={submitting}>
+            <Pressable
+              testID="report-block-only-button"
+              style={styles.blockButton}
+              onPress={handleBlockOnly}
+              disabled={submitting}
+            >
               <Text style={styles.actionText}>Block only</Text>
             </Pressable>
             <Pressable
+              testID="report-and-block-button"
               style={[styles.reportButton, !reason && styles.actionDisabled]}
               onPress={() => handleReport(true)}
               disabled={!reason || submitting}

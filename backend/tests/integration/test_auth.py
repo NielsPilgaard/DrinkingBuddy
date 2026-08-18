@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 import app.auth.service as auth_service
+import app.routers.auth as auth_router
 
 pytestmark = pytest.mark.integration
 
@@ -212,3 +213,78 @@ async def test_logout_is_idempotent_on_unknown_token(client) -> None:
 async def test_logout_without_authorization_header_is_noop(client) -> None:
     response = await client.post("/auth/logout")
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_debug_token_withheld_outside_development_environment(client, monkeypatch) -> None:
+    """Non-'development' environment - debug_token must stay null even when
+    the X-Test-Mode header is sent, so a production/staging deployment can
+    never leak sign-in tokens to anyone who can reach it. Environment is
+    pinned explicitly so this test doesn't depend on how the process/Docker
+    environment happens to be configured."""
+    _capture_deep_links(monkeypatch)
+    monkeypatch.setattr(auth_router.settings, "environment", "production")
+
+    response = await client.post(
+        "/auth/request-link",
+        json={"email": "no-leak@example.com", "birthdate": "2000-01-01"},
+        headers={"X-Test-Mode": "1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["debug_token"] is None
+
+
+@pytest.mark.asyncio
+async def test_debug_token_withheld_without_test_mode_header(client, monkeypatch) -> None:
+    _capture_deep_links(monkeypatch)
+    monkeypatch.setattr(auth_router.settings, "environment", "development")
+
+    response = await client.post(
+        "/auth/request-link",
+        json={"email": "no-header@example.com", "birthdate": "2000-01-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["debug_token"] is None
+
+
+@pytest.mark.asyncio
+async def test_debug_token_returned_in_development_environment_with_header(
+    client, monkeypatch
+) -> None:
+    sent = _capture_deep_links(monkeypatch)
+    monkeypatch.setattr(auth_router.settings, "environment", "development")
+
+    response = await client.post(
+        "/auth/request-link",
+        json={"email": "e2e-user@example.com", "birthdate": "2000-01-01"},
+        headers={"X-Test-Mode": "1"},
+    )
+
+    assert response.status_code == 200
+    debug_token = response.json()["debug_token"]
+    assert debug_token
+    assert debug_token == _token_from_deep_link(sent[0])
+
+    verify_response = await client.get("/auth/verify", params={"token": debug_token})
+    assert verify_response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_debug_token_absent_for_silently_rejected_signup(client, monkeypatch) -> None:
+    """The underage/no-birthdate no-op path returns raw_token=None from the
+    service - debug_token must stay null even in test mode, since there's no
+    token to echo."""
+    sent = _capture_deep_links(monkeypatch)
+    monkeypatch.setattr(auth_router.settings, "environment", "development")
+
+    response = await client.post(
+        "/auth/request-link",
+        json={"email": "e2e-no-birthdate@example.com"},
+        headers={"X-Test-Mode": "1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["debug_token"] is None
+    assert len(sent) == 0
