@@ -14,9 +14,7 @@
 # distribution, Android APK, EXPO_PUBLIC_API_URL baked to
 # http://localhost:8000 to match how the emulators reach this job's backend
 # service, see the "Start backend" step). Requires an EXPO_TOKEN repo secret.
-#
-# This is the FIRST GitHub Actions workflow in this repo (no .github/ existed
-# before this task) - please confirm GH Actions is the intended CI system.
+
 name: Mobile E2E (Maestro)
 
 on:

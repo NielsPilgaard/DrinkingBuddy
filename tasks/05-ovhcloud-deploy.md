@@ -1,20 +1,21 @@
 ---
-title: Hetzner deployment
+title: OVHcloud deployment
 status: pending
-last_updated: 2026-07-13
+last_updated: 2026-08-19
 depends_on: tasks/04-webrtc-signaling.md, docs/tech-stack.md
 ---
 
 ## Goal
 
-Move the local Docker Compose stack (API, Postgres, Redis, coturn) to a single Hetzner VPS, publicly reachable, with signaling and TURN actually working over the public internet (not just localhost/LAN).
+Move the local Docker Compose stack (API, Postgres, Redis, coturn) to a single OVHcloud VPS, publicly reachable, with signaling and TURN actually working over the public internet (not just localhost/LAN).
 
 ## Scope
 
 ### Infra
-- Provision Hetzner VPS.
-- Docker Compose stack running on the VPS: FastAPI app, Postgres, Redis, coturn.
-- Domain/TLS for the API and websocket signaling endpoint (e.g. Let's Encrypt).
+- Provision OVHcloud VPS.
+- Docker Compose stack running on the VPS: FastAPI app, Postgres, Redis, coturn. Deploy tooling TBD — Dokploy (self-hosted, Traefik + Let's Encrypt built in) is an option to evaluate before hand-rolling Compose + reverse proxy + certbot.
+- **Domain required.** Buy one (~$10-15/yr) before TLS/deploy work. Why: magic-link emails need stable `https://` host (bare IP looks phishy, breaks if IP changes); Let's Encrypt won't cert bare IPs; coturn `turns:` needs hostname too; mobile deep-links (iOS/Android) require domain, not IP.
+- Domain/TLS for API + websocket signaling (Let's Encrypt).
 - coturn public IP / port config correct for real NAT traversal (not just Docker-internal networking).
 - `.env` / secrets management for production (DB creds, coturn secret, email provider keys from task 02).
 - Basic persistence/backup story for Postgres data.
