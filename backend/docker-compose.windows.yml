@@ -1,6 +1,9 @@
-# Windows override: Docker Desktop's Windows/WSL2 engine can't install the
-# grafana/loki-docker-driver plugin (Linux-daemon-only). Swap Loki logging for
-# json-file so services still start; logs stay local (docker logs), not in Grafana.
+# No-Loki override: Docker Desktop's Windows/WSL2 engine can't install the
+# grafana/loki-docker-driver plugin (Linux-daemon-only), and any host that
+# hasn't run `docker plugin install grafana/loki-docker-driver` is in the same
+# spot. Swap Loki logging for json-file so services still start; logs stay
+# local (docker logs), not in Grafana. scripts/setup.{sh,ps1} --up applies this
+# automatically when the plugin is missing.
 services:
   api:
     logging:

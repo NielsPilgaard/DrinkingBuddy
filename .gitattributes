@@ -1,0 +1,9 @@
+# Force LF in the working tree on every OS. Biome and ruff format-check
+# expect LF, so a Windows checkout with core.autocrlf=true would otherwise
+# fail `scripts/verify.ps1` on a fresh clone.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary

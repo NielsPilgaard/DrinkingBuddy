@@ -16,7 +16,7 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "3100:3100"   # Loki push API (for docker loki logging driver)
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -116,7 +116,7 @@ services:
       - "3478:3478/tcp"
       - "49152-49172:49152-49172/udp"
     healthcheck:
-      test: ["CMD-SHELL", "netstat -an | grep 3478 || exit 1"]
+      test: ["CMD-SHELL", "turnutils_stunclient 127.0.0.1 >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

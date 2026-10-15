@@ -1,0 +1,62 @@
+# Fresh-clone install check: runs scripts/setup.sh exactly as a new
+# contributor (or coding agent) would, then lint/typecheck, backend tests, and
+# the full Docker Compose stack. Keeps "clone -> setup -> green" working.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: app/.nvmrc
+
+      # --up also brings up the Compose stack and waits for every healthcheck;
+      # no Loki plugin on the runner, so the script layers on the json-file override.
+      - name: Setup (scripts/setup.sh --up)
+        run: ./scripts/setup.sh --up
+
+      # Check-only variants of scripts/verify.ps1 (that script autofixes first).
+      - name: Lint + typecheck backend
+        working-directory: backend
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run ty check
+
+      - name: Lint + typecheck app
+        working-directory: app
+        run: |
+          npx biome check .
+          npx tsc --noEmit
+
+      - name: Backend unit tests
+        working-directory: backend
+        timeout-minutes: 5
+        run: uv run pytest tests/unit
+
+      - name: Backend integration tests (testcontainers)
+        working-directory: backend
+        timeout-minutes: 10
+        run: uv run pytest tests/integration -m integration
+
+      - name: Compose logs on failure
+        if: failure()
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.windows.yml logs
