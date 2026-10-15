@@ -43,6 +43,18 @@ else
   echo "WARNING: Docker daemon not reachable - needed for the backend stack and integration tests, not for install."
 fi
 
+# Android dev builds (npx expo run:android) need JDK 17-21: on JDK 24+ the JVM's
+# restricted-method warning fails AGP's CMake configure step. Gradle uses JAVA_HOME first.
+java_bin=java; [ -n "${JAVA_HOME:-}" ] && java_bin="$JAVA_HOME/bin/java"
+if command -v "$java_bin" >/dev/null; then
+  java_major=$("$java_bin" -version 2>&1 | sed -n '1s/.*version "\([0-9]*\).*/\1/p')
+  if [ -n "$java_major" ] && { [ "$java_major" -lt 17 ] || [ "$java_major" -gt 21 ]; }; then
+    echo "WARNING: JDK $java_major found - Android builds need JDK 17-21 (point JAVA_HOME at one). Not needed for backend work."
+  elif [ -n "$java_major" ]; then
+    echo "jdk $java_major"
+  fi
+fi
+
 step "Creating .env files (existing ones are left alone)"
 for dir in "$backend" "$app"; do
   if [ -f "$dir/.env" ]; then

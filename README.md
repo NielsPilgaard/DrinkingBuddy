@@ -6,7 +6,7 @@ See [AGENTS.md](AGENTS.md) for full product/tech overview, [docs/prd.md](docs/pr
 
 ## Quickstart
 
-Prerequisites: [uv](https://docs.astral.sh/uv/getting-started/installation/) (fetches Python 3.12+ itself), Node `^20.19.4 || ^22.13 || ^24.3` (see [app/.nvmrc](app/.nvmrc)), Docker (for the backend stack and integration tests).
+Prerequisites: [uv](https://docs.astral.sh/uv/getting-started/installation/) (fetches Python 3.12+ itself), Node `^20.19.4 || ^22.13 || ^24.3` (see [app/.nvmrc](app/.nvmrc)), Docker (for the backend stack and integration tests). Android dev builds also need JDK 17–21 and the Android SDK (`ANDROID_HOME`).
 
 ```bash
 ./scripts/setup.sh          # macOS / Linux / Git Bash
@@ -49,12 +49,14 @@ Expo (React Native, TypeScript). The app uses native modules (`react-native-webr
 
 ```bash
 cd app
-npx expo run:android        # or run:ios (macOS + Xcode); needs Android SDK / emulator
+npx expo run:android        # or run:ios (macOS + Xcode); needs Android SDK + emulator/device, JDK 17-21
 # or: eas build --profile development
 npx expo start --dev-client
 ```
 
-`EXPO_PUBLIC_API_URL` in `app/.env` points the app at the backend. Android emulator: `http://10.0.2.2:8000`. Physical device: your machine's LAN IP. See [docs/testing_app.md](docs/testing_app.md).
+JDK 24+ fails the native build at `configureCMakeDebug` ("A restricted method in java.lang.System has been called"). Point `JAVA_HOME` at JDK 17 or 21.
+
+`EXPO_PUBLIC_API_URL` in `app/.env` points the app at the backend. Android emulator: `http://10.0.2.2:8000`, or keep `localhost` and run `adb reverse tcp:8000 tcp:8000`. Physical device: your machine's LAN IP. See [docs/testing_app.md](docs/testing_app.md).
 
 Mobile E2E (Maestro): [maestro/README.md](maestro/README.md).
 

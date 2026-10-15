@@ -4,7 +4,7 @@ Chat-roulette-style app, random 1:1 pairing for virtual hangout over a drink. iO
 
 ## Setup (fresh clone)
 
-Prereqs: `uv`, Node `^20.19.4 || ^22.13 || ^24.3`, Docker (stack + integration tests only).
+Prereqs: `uv`, Node `^20.19.4 || ^22.13 || ^24.3`, Docker (stack + integration tests only). Android dev build: JDK 17–21 (24+ breaks CMake configure) + Android SDK via `ANDROID_HOME`.
 
 1. `./scripts/setup.sh` (bash) or `./scripts/setup.ps1` (pwsh 7). This creates `.env` files from `.env.example`, then runs `uv sync --extra dev` and `npm ci`. It's idempotent and never overwrites an existing `.env`.
 2. Verify: `cd backend && uv run pytest tests/unit`, then `pwsh -File scripts/verify.ps1` (or the raw commands in `.claude/skills/verify/SKILL.md` if pwsh is missing).

@@ -50,6 +50,16 @@ if (Get-Command docker -ErrorAction SilentlyContinue) {
 if ($dockerOk) { Write-Host 'docker daemon reachable' }
 else { Write-Host 'WARNING: Docker daemon not reachable - needed for the backend stack and integration tests, not for install.' -ForegroundColor Yellow }
 
+# Android dev builds (npx expo run:android) need JDK 17-21: on JDK 24+ the JVM's
+# restricted-method warning fails AGP's CMake configure step. Gradle uses JAVA_HOME first.
+$java = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin/java' } else { 'java' }
+if (Get-Command $java -ErrorAction SilentlyContinue) {
+    $javaMajor = [int](((& $java -version 2>&1 | Select-Object -First 1) -replace '.*version "(\d+).*', '$1'))
+    if ($javaMajor -lt 17 -or $javaMajor -gt 21) {
+        Write-Host "WARNING: JDK $javaMajor found - Android builds need JDK 17-21 (point JAVA_HOME at one). Not needed for backend work." -ForegroundColor Yellow
+    } else { Write-Host "jdk $javaMajor" }
+}
+
 Step 'Creating .env files (existing ones are left alone)'
 foreach ($dir in @($backend, $app)) {
     $rel = [IO.Path]::GetRelativePath($repoRoot, $dir)
