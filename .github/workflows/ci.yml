@@ -48,10 +48,12 @@ jobs:
 
       - name: Backend unit tests
         working-directory: backend
+        timeout-minutes: 5
         run: uv run pytest tests/unit
 
       - name: Backend integration tests (testcontainers)
         working-directory: backend
+        timeout-minutes: 10
         run: uv run pytest tests/integration -m integration
 
       - name: Compose logs on failure
