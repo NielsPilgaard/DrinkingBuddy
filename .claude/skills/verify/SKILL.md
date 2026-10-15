@@ -30,12 +30,11 @@ Exit 0 = all clean. Exit 1 = at least one step failed (see console for which).
 ## Setup (first run / after dependency changes)
 
 ```powershell
-cd backend; uv sync --extra dev
-cd app; npm install
+./scripts/setup.ps1   # or ./scripts/setup.sh
 ```
 
 ## Gotchas
 
-- `ty` is prerelease (`ty>=0.0.1a1` in `backend/pyproject.toml`) — API/output may shift between versions.
+- `ty` is prerelease (see `backend/pyproject.toml`) — API/output may shift between versions.
 - Biome config (`app/biome.json`) pins `$schema` to the installed `@biomejs/biome` version; if `npm install` bumps the version, update the schema URL or `npx biome check` prints a version-mismatch info line (harmless but noisy).
 - `app/biome.json` excludes `src/api/generated` (openapi-ts codegen output) from lint/format — don't hand-fix lint issues there, regenerate instead.

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
-    "@config-plugins/react-native-webrtc": "~13.0.0",
+    "@config-plugins/react-native-webrtc": "~15.0.2",
     "@didit-protocol/sdk-react-native": "^4.5.3",
     "@tanstack/react-query": "^5.101.2",
     "expo": "~57.0.4",

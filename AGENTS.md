@@ -2,12 +2,22 @@
 
 Chat-roulette-style app, random 1:1 pairing for virtual hangout over a drink. iOS + Android MVP, browser later.
 
+## Setup (fresh clone)
+
+Prereqs: `uv`, Node `^20.19.4 || ^22.13 || ^24.3`, Docker (stack + integration tests only).
+
+1. `./scripts/setup.sh` (bash) or `./scripts/setup.ps1` (pwsh 7). This creates `.env` files from `.env.example`, then runs `uv sync --extra dev` and `npm ci`. It's idempotent and never overwrites an existing `.env`.
+2. Verify: `cd backend && uv run pytest tests/unit`, then `pwsh -File scripts/verify.ps1` (or the raw commands in `.claude/skills/verify/SKILL.md` if pwsh is missing).
+3. Optional backend stack: `./scripts/setup.sh --up` / `./scripts/setup.ps1 -Up`. It picks `docker-compose.windows.yml` (json-file logs) when the host lacks the Loki Docker plugin. Then `curl localhost:8000/health` → 200.
+
+Don'ts: don't `docker plugin install` on the user's behalf (host-level, needs `--grant-all-permissions`). Don't set `CHAT_SAFETY_FLAG_ENCRYPTION_KEY=` empty, because an empty value overrides the dev default. Don't use Expo Go: the app needs a dev build (`npx expo run:android|ios`) for `react-native-webrtc` and Didit.
+
 ## Docs map
 
 - `docs/prd.md` — product spec, source of truth for scope/behavior.
 - `docs/tech-stack.md` — stack decisions.
 - `docs/local_dev.md` — local dev setup (dependency managers, running services outside Docker).
-- `tasks/01-scaffold-repo.md` — current task: repo skeleton.
+- `tasks/` — open task specs; `tasks/completed/` — done.
 - `docs/mockups/prototype-match-screen.html` — throwaway UI mockup of in-call screen (full-bleed video + fly-in chat/menu drawer). Not production code.
 
 ## Core loop
@@ -58,13 +68,13 @@ North star: D7 retention. Secondary: avg call duration.
 | Browser (later) | Plain React web client, same backend |
 | Desktop (later, optional) | Tauri wrapper |
 
-## Repo layout (target, per tasks/01-scaffold-repo.md)
+## Repo layout
 
 - `/backend` — FastAPI app entrypoint, routers/, models/, Alembic migrations. Docker Compose runs API + Postgres + Redis + coturn. `GET /health` → 200.
 - `/app` — Expo (React Native, TypeScript). `eas.json` present. MVP screen calls backend `/health` to prove connectivity.
 - Root `README.md` documents local run steps for both.
 
-Magic-link auth (`tasks/02-auth-magic-link.md`) and matching queue (`tasks/03-matching-queue.md`) are implemented. Signaling (WebRTC offer/answer/ICE relay) and coturn wiring are not yet built. Deploy config (`docker-compose.prod.yml`, `docs/deploy.md`) exists but nothing is deployed yet — see `tasks/05-ovhcloud-deploy.md` (pending) for the actual go-live work.
+Implemented: see `tasks/completed/` (auth, matching, WebRTC signaling + coturn TURN creds, report/block, age verification, chat safety, monitoring, mini-games). Deploy config (`docker-compose.prod.yml`, `docs/deploy.md`) exists but nothing is deployed yet — see `tasks/05-ovhcloud-deploy.md` (pending) for the actual go-live work.
 
 ## Conventions for agents working in this repo
 
