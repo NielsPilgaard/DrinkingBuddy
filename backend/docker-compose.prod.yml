@@ -124,6 +124,8 @@ services:
       --static-auth-secret=${COTURN_SECRET}
       --no-cli
       --external-ip=${COTURN_PUBLIC_IP}
+      --min-port=49152
+      --max-port=49172
     ports:
       - "3478:3478/udp"
       - "3478:3478/tcp"
