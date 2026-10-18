@@ -9,7 +9,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { verifyEndpointAuthVerifyPost } from '../api/generated/sdk.gen';
+import {
+  logoutEndpointAuthLogoutPost,
+  verifyEndpointAuthVerifyPost,
+} from '../api/generated/sdk.gen';
 import {
   clearStoredSessionToken,
   getStoredSessionToken,
@@ -66,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    // Revoke server-side too; best effort, signing out locally must not depend on the network.
+    await logoutEndpointAuthLogoutPost().catch(() => undefined);
     await clearStoredSessionToken();
     setState({ status: 'signed-out' });
   }
