@@ -86,6 +86,15 @@ def _parse_call_user_ids(call_id: str) -> tuple[uuid.UUID, uuid.UUID] | None:
         return None
 
 
+async def _close_game(websocket: WebSocket, call_id: str, user_id: uuid.UUID) -> None:
+    mini_games_service.close_game(call_id)
+    event = GameClosedEvent().model_dump()
+    await websocket.send_json(event)
+    peer_socket = call_registry.peer_socket(call_id, user_id)
+    if peer_socket is not None:
+        await peer_socket.send_json(event)
+
+
 @router.websocket("/signaling/ws")
 async def signaling_ws(
     websocket: WebSocket,
@@ -194,6 +203,9 @@ async def signaling_ws(
                     continue
                 prompt = await mini_games_service.pick_next_prompt(db, session)
                 if prompt is None:
+                    # Empty bank: end the game rather than leave the inviter
+                    # waiting on an accept that never starts anything.
+                    await _close_game(websocket, call_id, user_id)
                     continue
                 event = GameStartedEvent(
                     game_type=session.game_type, prompt=PublicGamePrompt.from_prompt(prompt)
@@ -220,6 +232,8 @@ async def signaling_ws(
                     continue
                 prompt = await mini_games_service.pick_next_prompt(db, session)
                 if prompt is None:
+                    # Bank exhausted for this call: the game is over.
+                    await _close_game(websocket, call_id, user_id)
                     continue
                 event = GamePromptEvent(prompt=PublicGamePrompt.from_prompt(prompt)).model_dump(
                     mode="json"
@@ -246,12 +260,7 @@ async def signaling_ws(
                 continue
 
             if isinstance(message, GameCloseMessage):
-                mini_games_service.close_game(call_id)
-                event = GameClosedEvent().model_dump()
-                await websocket.send_json(event)
-                peer_socket = call_registry.peer_socket(call_id, user_id)
-                if peer_socket is not None:
-                    await peer_socket.send_json(event)
+                await _close_game(websocket, call_id, user_id)
                 continue
 
             peer_socket = call_registry.peer_socket(call_id, user_id)

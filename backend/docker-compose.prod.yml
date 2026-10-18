@@ -10,7 +10,7 @@ x-loki-logging: &loki-logging
 services:
   migrate:
     build: .
-    command: alembic upgrade head
+    command: sh -c "alembic upgrade head && python -m app.mini_games.seed"
     env_file:
       - .env
     depends_on:

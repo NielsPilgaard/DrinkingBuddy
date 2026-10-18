@@ -239,3 +239,32 @@ async def test_trivia_correct_option_withheld_until_reveal(ws_client, monkeypatc
             assert revealed_b["type"] == "game_revealed"
             assert revealed_a["correct_option"] == "4"
             assert revealed_b["correct_option"] == "4"
+
+
+@pytest.mark.asyncio
+async def test_accept_with_empty_bank_closes_game_for_both(ws_client, monkeypatch):
+    # No trivia rows seeded: accepting must end the game, not leave the inviter waiting.
+    token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "empty-a@example.com")
+    token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "empty-b@example.com")
+    call_id = call_id_for_pair(user_a_id, user_b_id)
+
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
+        await ws_a.receive_json()  # turn creds
+
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
+            await ws_b.receive_json()  # turn creds
+            await ws_b.receive_json()  # peer_joined
+            await ws_a.receive_json()  # peer_joined
+
+            await ws_a.send_json({"type": "game_start", "game_type": "trivia"})
+            assert (await ws_b.receive_json())["type"] == "game_invite"
+
+            await ws_b.send_json({"type": "game_accept"})
+            assert (await ws_b.receive_json())["type"] == "game_closed"
+            assert (await ws_a.receive_json())["type"] == "game_closed"
+
+    assert get_session(call_id) is None
