@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
+  BackHandler,
   KeyboardAvoidingView,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -40,6 +43,8 @@ export function CallScreen({
     status,
     localStream,
     remoteStream,
+    remoteVideoActive,
+    mediaState,
     videoEnabled,
     audioEnabled,
     chatLog,
@@ -85,6 +90,8 @@ export function CallScreen({
     endCall();
     notifyCallEnded();
   }
+  const handleEndCallRef = useRef(handleEndCall);
+  handleEndCallRef.current = handleEndCall;
 
   function handleReportBlockDone() {
     setReportOpen(false);
@@ -105,11 +112,34 @@ export function CallScreen({
   }
 
   async function handleToggleVideo() {
-    const eligible = await toggleVideo();
-    if (!videoEnabled && !eligible) {
-      setVerifyPromptOpen(true);
-    }
+    const result = await toggleVideo();
+    if (result === 'not_eligible') setVerifyPromptOpen(true);
+    else if (result === 'blocked') showBlockedAlert('Camera');
   }
+
+  async function handleToggleAudio() {
+    if ((await toggleAudio()) === 'blocked') showBlockedAlert('Microphone');
+  }
+
+  // Android back: close whatever drawer/sheet is open; with none open, confirm
+  // before ending the call instead of letting back close the app mid-call.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (chatOpen || gameOpen || reportOpen || verifyPromptOpen) {
+        setChatOpen(false);
+        setGameOpen(false);
+        setReportOpen(false);
+        setVerifyPromptOpen(false);
+        return true;
+      }
+      Alert.alert('End this call?', undefined, [
+        { text: 'Stay', style: 'cancel' },
+        { text: 'End call', style: 'destructive', onPress: handleEndCallRef.current },
+      ]);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [chatOpen, gameOpen, reportOpen, verifyPromptOpen]);
 
   useEffect(() => {
     if (verification.state.kind === 'verified') {
@@ -132,18 +162,32 @@ export function CallScreen({
     // without this the chat input sits under it.
     <KeyboardAvoidingView style={styles.keyboardAvoider} behavior="padding">
       <View style={styles.container} testID="call-screen">
-        {remoteStream ? (
+        {remoteStream && remoteVideoActive ? (
           <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
         ) : (
-          <View style={[styles.remoteVideo, styles.placeholder]}>
+          <View style={[styles.remoteVideo, styles.placeholder]} testID="call-remote-placeholder">
             <Text style={styles.placeholderText}>
-              {status === 'waiting_for_peer' ? 'Connecting…' : 'Waiting for video…'}
+              {status === 'waiting_for_peer'
+                ? 'Connecting…'
+                : mediaState === 'failed'
+                  ? "Couldn't connect audio. Chat still works."
+                  : mediaState === 'connecting'
+                    ? 'Connecting audio…'
+                    : 'Connected · camera off'}
             </Text>
           </View>
         )}
 
         {localStream && videoEnabled && (
-          <RTCView streamURL={localStream.toURL()} style={styles.localVideo} objectFit="cover" />
+          // zOrder: on Android both RTCViews are SurfaceViews, and without it the
+          // remote video draws over this preview.
+          <RTCView
+            streamURL={localStream.toURL()}
+            style={styles.localVideo}
+            objectFit="cover"
+            mirror
+            zOrder={1}
+          />
         )}
 
         <DrinkCounter drinkType={drinkType} />
@@ -244,7 +288,11 @@ export function CallScreen({
           style={styles.controls}
           onLayout={(e) => setControlsHeight(e.nativeEvent.layout.height)}
         >
-          <Pressable testID="call-mute-button" style={styles.controlButton} onPress={toggleAudio}>
+          <Pressable
+            testID="call-mute-button"
+            style={styles.controlButton}
+            onPress={handleToggleAudio}
+          >
             <Text style={styles.controlText}>{audioEnabled ? 'Mute' : 'Unmute'}</Text>
           </Pressable>
           <Pressable
@@ -307,7 +355,8 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     alignItems: 'center',
-    justifyContent: 'center',
+    // Upper third, so the chat/game drawers don't cover the status text.
+    paddingTop: '60%',
   },
   placeholderText: {
     color: '#8a8a96',
@@ -426,3 +475,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+// Once a permission is denied, Android stops prompting; only Settings can re-enable it.
+function showBlockedAlert(device: 'Camera' | 'Microphone') {
+  Alert.alert(
+    `${device} access is off`,
+    `Allow ${device.toLowerCase()} access for DrinkingBuddy in Settings. Chat works without it.`,
+    [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Open Settings', onPress: () => Linking.openSettings() },
+    ],
+  );
+}
