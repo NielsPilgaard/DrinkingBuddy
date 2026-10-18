@@ -11,6 +11,12 @@ function isValidBirthdate(value: string): boolean {
   );
 }
 
+/** Digits only, dashes inserted as you type: "19900101" -> "1990-01-01". */
+function formatBirthdate(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6)].filter(Boolean).join('-');
+}
+
 export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [birthdate, setBirthdate] = useState('');
@@ -73,9 +79,10 @@ export function LoginScreen() {
         testID="login-birthdate-input"
         style={styles.input}
         placeholder="Birthdate (YYYY-MM-DD) — first time only"
-        autoCapitalize="none"
+        keyboardType="number-pad"
+        maxLength={10}
         value={birthdate}
-        onChangeText={setBirthdate}
+        onChangeText={(value) => setBirthdate(formatBirthdate(value))}
       />
       {error && <Text style={styles.error}>{error}</Text>}
       <Pressable
@@ -97,6 +104,8 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // The parent centers its children; stretch so the inputs get full width.
+    alignSelf: 'stretch',
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
