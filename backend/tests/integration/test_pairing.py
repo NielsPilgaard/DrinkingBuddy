@@ -74,6 +74,68 @@ async def test_find_or_wait_widened_pairs_across_locations(redis_conn):
     assert partner_of_a == user_b
 
 
+async def _pair(redis_conn, waiter_filters, waiter_widened, seeker_filters, seeker_widened):
+    """Waiter joins first, seeker second; returns (partner_of_waiter, partner_of_seeker, ids)."""
+    waiter, seeker = uuid.uuid4(), uuid.uuid4()
+    task = asyncio.ensure_future(
+        find_or_wait(redis_conn, waiter, waiter_filters, widened=waiter_widened, timeout_seconds=1)
+    )
+    await asyncio.sleep(0.05)
+    partner_of_seeker = await find_or_wait(
+        redis_conn, seeker, seeker_filters, widened=seeker_widened, timeout_seconds=0.2
+    )
+    return await task, partner_of_seeker, waiter, seeker
+
+
+@pytest.mark.asyncio
+async def test_widened_seeker_pairs_with_strict_waiter_in_same_location(redis_conn):
+    partner_of_waiter, partner_of_seeker, waiter, seeker = await _pair(
+        redis_conn, FILTERS_DK_EN_ALC, False, FILTERS_DK_EN_ALC, True
+    )
+    assert partner_of_seeker == waiter
+    assert partner_of_waiter == seeker
+
+
+@pytest.mark.asyncio
+async def test_widened_seeker_pairs_with_strict_waiter_in_other_location(redis_conn):
+    partner_of_waiter, partner_of_seeker, waiter, seeker = await _pair(
+        redis_conn, FILTERS_NO_EN_ALC, False, FILTERS_DK_EN_ALC, True
+    )
+    assert partner_of_seeker == waiter
+    assert partner_of_waiter == seeker
+
+
+@pytest.mark.asyncio
+async def test_strict_seeker_pairs_with_widened_waiter_in_other_location(redis_conn):
+    partner_of_waiter, partner_of_seeker, waiter, seeker = await _pair(
+        redis_conn, FILTERS_NO_EN_ALC, True, FILTERS_DK_EN_ALC, False
+    )
+    assert partner_of_seeker == waiter
+    assert partner_of_waiter == seeker
+
+
+@pytest.mark.asyncio
+async def test_strict_seekers_in_different_locations_do_not_pair(redis_conn):
+    partner_of_waiter, partner_of_seeker, _, _ = await _pair(
+        redis_conn, FILTERS_NO_EN_ALC, False, FILTERS_DK_EN_ALC, False
+    )
+    assert partner_of_seeker is None
+    assert partner_of_waiter is None
+
+
+@pytest.mark.asyncio
+async def test_widened_seeker_skips_other_drink_type(redis_conn):
+    partner_of_waiter, partner_of_seeker, _, _ = await _pair(
+        redis_conn,
+        Filters(language="en", drink_type="non_alcoholic", location="no"),
+        False,
+        FILTERS_DK_EN_ALC,
+        True,
+    )
+    assert partner_of_seeker is None
+    assert partner_of_waiter is None
+
+
 @pytest.mark.asyncio
 async def test_find_or_wait_calls_on_waiting_only_when_not_matched_instantly(redis_conn):
     seeker = uuid.uuid4()
