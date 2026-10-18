@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { authedWebSocket } from './signaling';
 
 export type Filters = {
   language: string;
@@ -17,9 +18,8 @@ export type MatchResult = {
   videoEligible: boolean;
 };
 
-function matchingWsUrl(apiBaseUrl: string, sessionToken: string): string {
-  const wsBase = apiBaseUrl.replace(/^http/, 'ws');
-  return `${wsBase}/matching/ws?token=${encodeURIComponent(sessionToken)}`;
+function matchingWsUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl.replace(/^http/, 'ws')}/matching/ws`;
 }
 
 /**
@@ -37,7 +37,7 @@ export function useMatching(apiBaseUrl: string, sessionToken: string, userId: st
     (filters: Filters) => {
       wsRef.current?.close();
 
-      const ws = new WebSocket(matchingWsUrl(apiBaseUrl, sessionToken));
+      const ws = authedWebSocket(matchingWsUrl(apiBaseUrl), sessionToken);
       wsRef.current = ws;
       ws.onopen = () => {
         ws.send(JSON.stringify({ type: 'join', filters }));

@@ -21,7 +21,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, s
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], body["user_id"]
 

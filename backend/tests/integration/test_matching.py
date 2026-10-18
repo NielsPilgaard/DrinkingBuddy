@@ -13,6 +13,10 @@ FILTERS_NO_EN_ALC = {"language": "en", "drink_type": "alcoholic", "location": "n
 FILTERS_DK_EN_NONALC = {"language": "en", "drink_type": "non_alcoholic", "location": "dk"}
 
 
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, str]:
     sent: list[str] = []
     monkeypatch.setattr(
@@ -22,7 +26,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, s
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], body["user_id"]
 
@@ -32,12 +36,12 @@ async def test_compatible_users_are_paired(ws_client, monkeypatch):
     token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "alice@example.com")
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "bob@example.com")
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting = await ws_a.receive_json()
         assert waiting["type"] == "waiting"
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
 
             matched_b = await ws_b.receive_json()
@@ -55,8 +59,8 @@ async def test_incompatible_filters_do_not_pair(ws_client, monkeypatch):
     token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "dave@example.com")
 
     async with (
-        ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a,
-        ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b,
     ):
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting_a = await ws_a.receive_json()
@@ -78,7 +82,7 @@ async def test_cold_start_triggers_widen_search_prompt(ws_client, monkeypatch):
 
     token, _ = await _signup_and_get_token(ws_client, monkeypatch, "erin@example.com")
 
-    async with ws_client.websocket(f"/matching/ws?token={token}") as ws:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token)) as ws:
         await ws.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting = await ws.receive_json()
         assert waiting["type"] == "waiting"
@@ -94,8 +98,8 @@ async def test_skip_requeues_without_cooldown(ws_client, monkeypatch):
     token_c, _ = await _signup_and_get_token(ws_client, monkeypatch, "heidi@example.com")
 
     async with (
-        ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a,
-        ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b,
     ):
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         await ws_a.receive_json()
@@ -109,7 +113,7 @@ async def test_skip_requeues_without_cooldown(ws_client, monkeypatch):
         waiting_after_skip = await ws_a.receive_json()
         assert waiting_after_skip["type"] == "waiting"
 
-        async with ws_client.websocket(f"/matching/ws?token={token_c}") as ws_c:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_c)) as ws_c:
             await ws_c.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
             matched_c = await ws_c.receive_json()
             matched_a_again = await ws_a.receive_json()
@@ -125,7 +129,7 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
     token_a, _ = await _signup_and_get_token(ws_client, monkeypatch, "ivan@example.com")
     token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "judy@example.com")
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         await ws_a.receive_json()
 
@@ -146,7 +150,7 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
     finally:
         await redis.aclose()
 
-    async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
         await ws_b.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting = await ws_b.receive_json()
         assert waiting["type"] == "waiting"
@@ -158,12 +162,12 @@ async def test_widen_search_pairs_across_locations(ws_client, monkeypatch):
     token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "kevin@example.com")
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "laura@example.com")
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC, "widen_search": True})
         waiting = await ws_a.receive_json()
         assert waiting["type"] == "waiting"
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json(
                 {"type": "join", "filters": FILTERS_NO_EN_ALC, "widen_search": True}
             )
@@ -183,8 +187,8 @@ async def test_without_widen_search_different_locations_do_not_pair(ws_client, m
     token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "niaj@example.com")
 
     async with (
-        ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a,
-        ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b,
     ):
         await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
         waiting_a = await ws_a.receive_json()
@@ -196,3 +200,9 @@ async def test_without_widen_search_different_locations_do_not_pair(ws_client, m
 
         await ws_a.send_json({"type": "leave"})
         await ws_b.send_json({"type": "leave"})
+
+
+@pytest.mark.asyncio
+async def test_unauthenticated_connection_gets_4401(ws_close_code):
+    # A close code, not a handshake rejection: the app signs out on 4401.
+    assert await ws_close_code("/matching/ws", headers=_bearer("not-a-session")) == 4401

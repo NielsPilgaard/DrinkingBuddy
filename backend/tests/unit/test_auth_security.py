@@ -1,7 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
 
 import app.auth.service as auth_service
-from app.auth.security import generate_token, hash_token
+from app.auth.security import bearer_token, generate_token, hash_token
 from app.auth.service import _is_underage
 
 # Fixed, non-leap reference date so year-17/-18 arithmetic never lands on Feb 29.
@@ -54,3 +54,15 @@ def test_is_underage_true_for_18th_birthday_tomorrow(monkeypatch) -> None:
     _freeze_today(monkeypatch)
     turns_18 = date(REFERENCE_TODAY.year - 18, REFERENCE_TODAY.month, REFERENCE_TODAY.day)
     assert _is_underage(turns_18 + timedelta(days=1)) is True
+
+
+def test_bearer_token_extracts_token() -> None:
+    assert bearer_token("Bearer abc") == "abc"
+    assert bearer_token("bearer abc") == "abc"
+
+
+def test_bearer_token_rejects_missing_or_other_schemes() -> None:
+    assert bearer_token(None) is None
+    assert bearer_token("") is None
+    assert bearer_token("Bearer ") is None
+    assert bearer_token("Basic abc") is None

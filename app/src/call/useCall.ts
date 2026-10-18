@@ -261,7 +261,7 @@ export function useCall({
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        signaling = new SignalingClient(signalingWsUrl(apiBaseUrl, sessionToken, callId));
+        signaling = new SignalingClient(signalingWsUrl(apiBaseUrl, callId), sessionToken);
         signalingRef.current = signaling;
         await signaling.waitUntilOpen();
         if (cancelled) return;

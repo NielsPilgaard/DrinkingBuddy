@@ -16,6 +16,10 @@ class RequestLinkResponse(BaseModel):
     debug_token: str | None = None
 
 
+class VerifyBody(BaseModel):
+    token: str
+
+
 class VerifyResponse(BaseModel):
     session_token: str
     user_id: uuid.UUID

@@ -155,10 +155,28 @@ function isTurnCredentials(msg: unknown): msg is TurnCredentialsMessage {
 
 export { isRelayEnvelope, isTurnCredentials };
 
-export function signalingWsUrl(baseUrl: string, sessionToken: string, callId: string): string {
+export function signalingWsUrl(baseUrl: string, callId: string): string {
   const wsBase = baseUrl.replace(/^http/, 'ws');
-  return `${wsBase}/signaling/ws?token=${encodeURIComponent(sessionToken)}&call_id=${encodeURIComponent(callId)}`;
+  return `${wsBase}/signaling/ws?call_id=${encodeURIComponent(callId)}`;
 }
+
+/**
+ * Opens a websocket that authenticates with the session token in a header. Never put the
+ * token in the URL: URLs end up in access logs and trace spans. React Native's WebSocket
+ * accepts headers; a browser client will need another mechanism.
+ */
+export function authedWebSocket(url: string, sessionToken: string): WebSocket {
+  return new (WebSocket as unknown as ReactNativeWebSocket)(url, null, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
+}
+
+// React Native's WebSocket takes a third options arg; the DOM typings in scope don't know it.
+type ReactNativeWebSocket = new (
+  url: string,
+  protocols: string | string[] | null,
+  options: { headers: Record<string, string> },
+) => WebSocket;
 
 export class SignalingClient {
   private ws: WebSocket;
@@ -172,8 +190,8 @@ export class SignalingClient {
   onError: ((detail: string) => void) | null = null;
   onClose: (() => void) | null = null;
 
-  constructor(url: string) {
-    this.ws = new WebSocket(url);
+  constructor(url: string, sessionToken: string) {
+    this.ws = authedWebSocket(url, sessionToken);
     this.ws.onmessage = (event) => this.handleMessage(event.data);
     this.ws.onclose = () => this.onClose?.();
   }

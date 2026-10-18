@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.security import bearer_token
 from app.auth.service import get_user_for_session_token
 from app.chat_safety.service import clear_call_state as clear_chat_safety_state
 from app.chat_safety.service import scan_chat_message
@@ -42,6 +43,7 @@ from app.signaling.schemas import (
 )
 from app.signaling.turn import generate_turn_credentials
 from app.verification.service import is_video_eligible
+from app.ws import reject_websocket
 
 router = APIRouter(tags=["signaling"])
 
@@ -64,7 +66,8 @@ _MESSAGE_TYPES: dict[str, type[InboundMessage | InboundGameMessage]] = {
 
 
 async def _authenticate(websocket: WebSocket, db: AsyncSession) -> uuid.UUID | None:
-    token = websocket.query_params.get("token")
+    # Header, not a query param: URLs end up in access logs and trace spans.
+    token = bearer_token(websocket.headers.get("authorization"))
     if not token:
         return None
 
@@ -90,24 +93,24 @@ async def signaling_ws(
 ) -> None:
     user_id = await _authenticate(websocket, db)
     if user_id is None:
-        await websocket.close(code=4401, reason="Not authenticated")
+        await reject_websocket(websocket, 4401, "Not authenticated")
         return
 
     call_id = websocket.query_params.get("call_id")
     if not call_id:
-        await websocket.close(code=4400, reason="Missing call_id")
+        await reject_websocket(websocket, 4400, "Missing call_id")
         return
 
     call_user_ids = _parse_call_user_ids(call_id)
     if call_user_ids is None or user_id not in call_user_ids:
-        await websocket.close(code=4403, reason="Not a participant in this call")
+        await reject_websocket(websocket, 4403, "Not a participant in this call")
         return
     partner_id = call_user_ids[0] if call_user_ids[1] == user_id else call_user_ids[1]
 
     try:
         previous_socket = call_registry.join(call_id, user_id, websocket)
     except CallFullError:
-        await websocket.close(code=4409, reason="Call already has two participants")
+        await reject_websocket(websocket, 4409, "Call already has two participants")
         return
 
     try:

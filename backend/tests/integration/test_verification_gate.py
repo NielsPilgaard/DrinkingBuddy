@@ -14,6 +14,10 @@ pytestmark = pytest.mark.integration
 FILTERS = {"language": "en", "drink_type": "alcoholic", "location": "dk"}
 
 
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, str]:
     sent: list[str] = []
     monkeypatch.setattr(
@@ -23,7 +27,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, s
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], body["user_id"]
 
@@ -47,11 +51,11 @@ async def test_matched_event_video_ineligible_when_both_unverified(ws_client, mo
     token_a, _ = await _signup_and_get_token(ws_client, monkeypatch, "alice@example.com")
     token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "bob@example.com")
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS})
         await ws_a.receive_json()  # waiting
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json({"type": "join", "filters": FILTERS})
             matched_b = await ws_b.receive_json()
             matched_a = await ws_a.receive_json()
@@ -68,11 +72,11 @@ async def test_matched_event_video_ineligible_when_only_one_verified(
     token_b, _user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "dave@example.com")
     await _mark_verified(db_session, user_a_id)
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS})
         await ws_a.receive_json()  # waiting
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json({"type": "join", "filters": FILTERS})
             matched_b = await ws_b.receive_json()
             matched_a = await ws_a.receive_json()
@@ -88,11 +92,11 @@ async def test_matched_event_video_eligible_when_both_verified(ws_client, monkey
     await _mark_verified(db_session, user_a_id)
     await _mark_verified(db_session, user_b_id)
 
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as ws_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a:
         await ws_a.send_json({"type": "join", "filters": FILTERS})
         await ws_a.receive_json()  # waiting
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as ws_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json({"type": "join", "filters": FILTERS})
             matched_b = await ws_b.receive_json()
             matched_a = await ws_a.receive_json()
@@ -112,10 +116,14 @@ async def test_video_status_request_reflects_fresh_revocation(ws_client, monkeyp
     await _mark_verified(db_session, user_b_id)
     call_id = call_id_for_pair(uuid.UUID(user_a_id), uuid.UUID(user_b_id))
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined

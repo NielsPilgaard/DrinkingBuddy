@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { verifyEndpointAuthVerifyGet } from '../api/generated/sdk.gen';
+import { verifyEndpointAuthVerifyPost } from '../api/generated/sdk.gen';
 import {
   clearStoredSessionToken,
   getStoredSessionToken,
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verify = useCallback(async (token: string) => {
     verificationStarted.current = true;
     setState({ status: 'verifying' });
-    const { data, error, response } = await verifyEndpointAuthVerifyGet({ query: { token } });
+    const { data, error, response } = await verifyEndpointAuthVerifyPost({ body: { token } });
     if (error || !data) {
       setState({ status: response?.status === 403 ? 'verify-suspended' : 'verify-failed' });
       return;

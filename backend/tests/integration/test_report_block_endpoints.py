@@ -2,7 +2,6 @@ import uuid
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-from httpx2.websockets import WebSocketUpgradeError
 from sqlalchemy import select
 
 import app.auth.service as auth_service
@@ -10,6 +9,10 @@ from app.config import settings
 from app.models.block import Block
 
 pytestmark = pytest.mark.integration
+
+
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
 
 
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, uuid.UUID]:
@@ -21,7 +24,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, u
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], uuid.UUID(body["user_id"])
 
@@ -155,12 +158,12 @@ async def test_nth_report_suspends_login(client, monkeypatch):
     )
     new_token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": new_token})
+    verify_response = await client.post("/auth/verify", json={"token": new_token})
     assert verify_response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_suspended_user_cannot_join_matching_queue(ws_client, monkeypatch):
+async def test_suspended_user_cannot_join_matching_queue(ws_client, ws_close_code, monkeypatch):
     token, reported_id = await _signup_and_get_token(
         ws_client, monkeypatch, "suspended-matching@example.com"
     )
@@ -179,13 +182,5 @@ async def test_suspended_user_cannot_join_matching_queue(ws_client, monkeypatch)
             },
         )
 
-    with pytest.raises(WebSocketUpgradeError) as exc_info:
-        async with ws_client.websocket(f"/matching/ws?token={token}") as ws:
-            await ws.send_json(
-                {
-                    "type": "join",
-                    "filters": {"language": "en", "drink_type": "alcoholic", "location": "dk"},
-                }
-            )
-            await ws.receive_json()
-    assert exc_info.value.response.status_code == 403
+    # A close code, not a handshake rejection, so the app can show the suspended screen.
+    assert await ws_close_code("/matching/ws", headers=_bearer(token)) == 4403

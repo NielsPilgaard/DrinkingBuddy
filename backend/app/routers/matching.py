@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.security import bearer_token
 from app.auth.service import get_user_for_session_token
 from app.db import get_db
 from app.matching.pairing import DEFAULT_COLD_START_TIMEOUT_SECONDS, find_or_wait
@@ -26,6 +27,7 @@ from app.moderation.service import are_blocked, is_suspended
 from app.redis import get_redis
 from app.signaling.session import call_id_for_pair
 from app.verification.service import is_video_eligible
+from app.ws import reject_websocket
 
 router = APIRouter(tags=["matching"])
 
@@ -35,7 +37,8 @@ _db_dependency = Depends(get_db)
 
 
 async def _authenticate(websocket: WebSocket, db: AsyncSession) -> uuid.UUID | None:
-    token = websocket.query_params.get("token")
+    # Header, not a query param: URLs end up in access logs and trace spans.
+    token = bearer_token(websocket.headers.get("authorization"))
     if not token:
         return None
 
@@ -79,11 +82,11 @@ async def matching_ws(
 ) -> None:
     user_id = await _authenticate(websocket, db)
     if user_id is None:
-        await websocket.close(code=4401, reason="Not authenticated")
+        await reject_websocket(websocket, 4401, "Not authenticated")
         return
 
     if await is_suspended(db, user_id):
-        await websocket.close(code=4403, reason="Account suspended")
+        await reject_websocket(websocket, 4403, "Account suspended")
         return
 
     await websocket.accept()

@@ -5,6 +5,7 @@ import pytest
 import pytest_asyncio
 import uvicorn
 from httpx2 import ASGITransport, AsyncClient
+from httpx2.websockets import WebSocketDisconnect
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.postgres import PostgresContainer
@@ -158,3 +159,24 @@ async def ws_client(db_url, redis_container):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
+
+
+@pytest.fixture()
+def ws_close_code(ws_client):
+    """Connect to a websocket and return the close code the server ends it with.
+
+    Returns None if the server sends a message instead of closing.
+    """
+
+    async def close_code(url: str, **kwargs) -> int | None:
+        code: int | None = None
+        try:
+            async with ws_client.websocket(url, **kwargs) as ws:
+                await ws.receive_json()
+        except* WebSocketDisconnect as group:
+            first = group.exceptions[0]
+            assert isinstance(first, WebSocketDisconnect)
+            code = first.code
+        return code
+
+    return close_code

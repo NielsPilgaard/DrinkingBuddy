@@ -2,7 +2,6 @@ import uuid
 from urllib.parse import parse_qs, urlparse
 
 import pytest
-from httpx2.websockets import HTTPXWSException
 from sqlalchemy import select
 
 import app.auth.service as auth_service
@@ -10,6 +9,10 @@ from app.models.chat_safety import FlaggedMessage
 from app.signaling.session import call_id_for_pair
 
 pytestmark = pytest.mark.integration
+
+
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
 
 
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, uuid.UUID]:
@@ -21,7 +24,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, u
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], uuid.UUID(body["user_id"])
 
@@ -32,11 +35,15 @@ async def test_peers_receive_turn_credentials_and_peer_joined(ws_client, monkeyp
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "bob@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         turn_a = await ws_a.receive_json()
         assert turn_a["ice_servers"]
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             turn_b = await ws_b.receive_json()
             assert turn_b["ice_servers"]
 
@@ -52,10 +59,14 @@ async def test_offer_answer_and_ice_candidates_are_relayed(ws_client, monkeypatc
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "dave@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -88,10 +99,14 @@ async def test_chat_messages_are_relayed_server_side(ws_client, monkeypatch):
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "frank@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -113,10 +128,14 @@ async def test_ice_breaker_relays_and_bypasses_chat_safety_scan(ws_client, monke
 
     prompt = "Dogs, cats, or neither?"
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -142,10 +161,14 @@ async def test_ice_breaker_rejects_unallowlisted_text(ws_client, monkeypatch, db
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "trent@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -166,10 +189,14 @@ async def test_peer_leaving_notifies_remaining_participant(ws_client, monkeypatc
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "heidi@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -187,17 +214,21 @@ async def test_reconnect_does_not_spuriously_notify_peer_left(ws_client, monkeyp
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "quentin@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a1:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a1:
         await ws_a1.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a1.receive_json()  # peer_joined
 
             # A reconnects: new socket replaces ws_a1 for the same user_id.
             async with ws_client.websocket(
-                f"/signaling/ws?token={token_a}&call_id={call_id}"
+                f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
             ) as ws_a2:
                 await ws_a2.receive_json()  # turn creds
                 # B (still-active peer) and A (self) both get a fresh
@@ -215,30 +246,31 @@ async def test_reconnect_does_not_spuriously_notify_peer_left(ws_client, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_third_participant_is_rejected_when_call_is_full(ws_client, monkeypatch):
+async def test_third_participant_is_rejected_when_call_is_full(
+    ws_client, ws_close_code, monkeypatch
+):
     token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "ivan@example.com")
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "judy@example.com")
     token_c, _ = await _signup_and_get_token(ws_client, monkeypatch, "kevin@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
     async with (
-        ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a,
-        ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b,
+        ws_client.websocket(f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)) as ws_a,
+        ws_client.websocket(f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)) as ws_b,
     ):
         await ws_a.receive_json()  # turn creds
         await ws_b.receive_json()  # turn creds
         await ws_b.receive_json()  # peer_joined
         await ws_a.receive_json()  # peer_joined
 
-        with pytest.raises(HTTPXWSException):
-            async with ws_client.websocket(
-                f"/signaling/ws?token={token_c}&call_id={call_id}"
-            ) as ws_c:
-                await ws_c.receive_json()
+        code = await ws_close_code(f"/signaling/ws?call_id={call_id}", headers=_bearer(token_c))
+        assert code == 4403
 
 
 @pytest.mark.asyncio
-async def test_nonparticipant_is_rejected_before_call_is_full(ws_client, monkeypatch):
+async def test_nonparticipant_is_rejected_before_call_is_full(
+    ws_client, ws_close_code, monkeypatch
+):
     """A user_id that isn't one of the two ids encoded in call_id must be
     denied, even when a slot is free (i.e. before B has joined)."""
     _token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "mallory@example.com")
@@ -246,22 +278,26 @@ async def test_nonparticipant_is_rejected_before_call_is_full(ws_client, monkeyp
     token_c, _ = await _signup_and_get_token(ws_client, monkeypatch, "oscar@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    with pytest.raises(HTTPXWSException):
-        async with ws_client.websocket(f"/signaling/ws?token={token_c}&call_id={call_id}") as ws_c:
-            await ws_c.receive_json()
+    code = await ws_close_code(f"/signaling/ws?call_id={call_id}", headers=_bearer(token_c))
+    assert code == 4403
 
 
 @pytest.mark.asyncio
-async def test_unauthenticated_connection_is_rejected(ws_client):
-    with pytest.raises(HTTPXWSException):
-        async with ws_client.websocket("/signaling/ws?call_id=whatever"):
-            pass
+async def test_unauthenticated_connection_is_rejected(ws_close_code):
+    assert await ws_close_code("/signaling/ws?call_id=whatever") == 4401
 
 
 @pytest.mark.asyncio
-async def test_missing_call_id_is_rejected(ws_client, monkeypatch):
+async def test_token_in_query_string_is_rejected(ws_client, ws_close_code, monkeypatch):
+    # Query strings end up in access logs and trace spans, so the session
+    # token is only accepted from the Authorization header.
+    token, _ = await _signup_and_get_token(ws_client, monkeypatch, "query@example.com")
+
+    assert await ws_close_code(f"/signaling/ws?token={token}&call_id=whatever") == 4401
+
+
+@pytest.mark.asyncio
+async def test_missing_call_id_is_rejected(ws_client, ws_close_code, monkeypatch):
     token, _ = await _signup_and_get_token(ws_client, monkeypatch, "laura@example.com")
 
-    with pytest.raises(HTTPXWSException):
-        async with ws_client.websocket(f"/signaling/ws?token={token}"):
-            pass
+    assert await ws_close_code("/signaling/ws", headers=_bearer(token)) == 4400
