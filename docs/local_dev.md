@@ -49,4 +49,4 @@ npm install
 npx expo start
 ```
 
-`EXPO_PUBLIC_API_URL` controls which backend the app/codegen point at (defaults to `http://localhost:8000`).
+`EXPO_PUBLIC_API_URL` controls which backend the app/codegen point at. Unset: codegen uses `http://localhost:8000`, and dev builds of the app use port 8000 on the Metro host (`app/src/api/baseUrl.ts`).

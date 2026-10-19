@@ -31,6 +31,8 @@ type AuthState =
 
 type AuthContextValue = AuthState & {
   signIn: (sessionToken: string, userId: string) => Promise<void>;
+  /** Exchange a magic-link token for a session, as if the link was opened. */
+  verify: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
   retryUnlock: () => Promise<void>;
 };
@@ -147,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [verify, unlock]);
 
   return (
-    <AuthContext.Provider value={{ ...state, signIn, signOut, retryUnlock }}>
+    <AuthContext.Provider value={{ ...state, signIn, verify, signOut, retryUnlock }}>
       {children}
     </AuthContext.Provider>
   );

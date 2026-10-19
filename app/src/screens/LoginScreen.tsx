@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { requestLinkEndpointAuthRequestLinkPost } from '../api/generated/sdk.gen';
+import { useAuth } from '../auth/context';
 import { colors } from '../theme';
 
 function isValidBirthdate(value: string): boolean {
@@ -19,6 +20,7 @@ function formatBirthdate(value: string): string {
 }
 
 export function LoginScreen() {
+  const { verify } = useAuth();
   const [email, setEmail] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -31,12 +33,16 @@ export function LoginScreen() {
     setError(null);
     setSubmitting(true);
     try {
-      const { error: reqError } = await requestLinkEndpointAuthRequestLinkPost({
+      const { data, error: reqError } = await requestLinkEndpointAuthRequestLinkPost({
         body: {
           email: email.trim(),
           birthdate:
             birthdate.trim() && isValidBirthdate(birthdate.trim()) ? birthdate.trim() : null,
         },
+        // Dev builds only: a backend with ENVIRONMENT=development echoes the
+        // magic-link token back, so we sign in without opening the email.
+        // Any other backend ignores the header (see backend app/routers/auth.py).
+        headers: __DEV__ ? { 'x-test-mode': '1' } : undefined,
       });
       if (reqError) {
         setError(
@@ -44,6 +50,10 @@ export function LoginScreen() {
             ? String((reqError as { detail: unknown }).detail)
             : 'Something went wrong. Try again.',
         );
+        return;
+      }
+      if (data?.debug_token) {
+        await verify(data.debug_token);
         return;
       }
       setLinkSent(true);
