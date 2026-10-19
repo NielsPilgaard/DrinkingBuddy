@@ -45,7 +45,7 @@ In-call text messaging ships in MVP alongside video/audio (same session, not a s
 
 ### Cold start / empty queue handling
 
-If no match found within a timeout (~20-30s) under current filters, prompt user to **opt-in** widen search (e.g. "No one found nearby. Search all regions instead? [Yes/No]"). Never silently auto-widen — that breaks trust in filters the user explicitly set.
+If no match found within a timeout (~20-30s) under current filters, prompt user to **opt-in** widen search (e.g. "No one found yet. Match with people who speak any language? [Yes/No]"). Widening drops the language filter only, never drink type — with a Denmark-only launch (§3) there are no other regions to widen into. Never silently auto-widen — that breaks trust in filters the user explicitly set.
 
 ## 5. Matching filters (MVP scope)
 

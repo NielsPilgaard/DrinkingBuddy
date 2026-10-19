@@ -8,11 +8,13 @@ from app.matching.schemas import Filters
 QUEUE_KEY_PREFIX = "queue:bucket"
 MATCH_CHANNEL_PREFIX = "queue:match"
 FILTERS_KEY_PREFIX = "queue:filters"
-# Set of the location bucket keys in use per (language, drink_type), so a
-# widened seeker can find waiters in every location.
-LOCATIONS_KEY_PREFIX = "queue:locations"
+# Set of the language bucket keys in use per (drink_type, location), so a
+# widened seeker can find waiters of every language. Widening drops the
+# language filter, not location: launch is Denmark-only, so there are no
+# other locations to widen into.
+LANGUAGES_KEY_PREFIX = "queue:languages"
 
-WIDE_LOCATION = "*"
+WIDE_LANGUAGE = "*"
 
 # Bound on how many blocked candidates get skipped before falling back to
 # waiting - guards against pathological all-blocked buckets spinning forever.
@@ -22,25 +24,25 @@ RESERVED_PREFIX = "RESERVED"
 
 
 def _bucket_key(filters: Filters, *, widened: bool) -> str:
-    location = WIDE_LOCATION if widened else filters.location
-    return f"{QUEUE_KEY_PREFIX}:{filters.language}:{filters.drink_type}:{location}"
+    language = WIDE_LANGUAGE if widened else filters.language
+    return f"{QUEUE_KEY_PREFIX}:{language}:{filters.drink_type}:{filters.location}"
 
 
-def _locations_key(filters: Filters) -> str:
-    return f"{LOCATIONS_KEY_PREFIX}:{filters.language}:{filters.drink_type}"
+def _languages_key(filters: Filters) -> str:
+    return f"{LANGUAGES_KEY_PREFIX}:{filters.drink_type}:{filters.location}"
 
 
 async def _candidate_buckets(redis: Redis, filters: Filters, *, widened: bool) -> list[str]:
     """Buckets this seeker may pop a partner from, best match first.
 
-    Widened waiters accept any location, so everyone can pair with them. A
-    widened seeker can also pair with waiters in every other location.
+    Widened waiters accept any language, so everyone can pair with them. A
+    widened seeker can also pair with waiters of every other language.
     """
     own = _bucket_key(filters, widened=False)
     wide = _bucket_key(filters, widened=True)
     if not widened:
         return [own, wide]
-    members = await redis.smembers(_locations_key(filters))
+    members = await redis.smembers(_languages_key(filters))
     others = sorted({str(m) for m in members} - {own})
     return [own, wide, *others]
 
@@ -58,7 +60,7 @@ def _filters_key(user_id: uuid.UUID) -> str:
 # their filters key as reserved-by-this-bucket (rather than deleting it) so a
 # later requeue can tell whether the candidate re-joined elsewhere in the
 # meantime. Returns false if the bucket has no other waiter, and drops an
-# emptied location bucket from its locations index (KEYS[3], if given).
+# emptied language bucket from its languages index (KEYS[3], if given).
 # Block-compatibility can't be checked here (Lua has no DB access), so the
 # Python caller re-pushes a popped-but-blocked candidate and retries.
 _POP_CANDIDATE_SCRIPT = """
@@ -84,7 +86,7 @@ end
 # Requeues a candidate popped-but-blocked only if their filters key still
 # shows them reserved by this bucket - if they rejoined a queue in the
 # meantime (their filters key changed), leave that newer state alone. Re-adds
-# a location bucket to its locations index (KEYS[3], if given), since the pop
+# a language bucket to its languages index (KEYS[3], if given), since the pop
 # may have pruned it when the bucket emptied.
 _REQUEUE_RESERVED_SCRIPT = """
 local bucket = KEYS[1]
@@ -104,7 +106,7 @@ end
 _JOIN_SCRIPT = """
 local bucket = KEYS[1]
 local filters_key = KEYS[2]
-local locations_key = KEYS[3]
+local languages_key = KEYS[3]
 local user_id = ARGV[1]
 
 local old_bucket = redis.call('GET', filters_key)
@@ -113,8 +115,8 @@ if old_bucket then
 end
 redis.call('SET', filters_key, bucket)
 redis.call('LPUSH', bucket, user_id)
-if locations_key then
-    redis.call('SADD', locations_key, bucket)
+if languages_key then
+    redis.call('SADD', languages_key, bucket)
 end
 """
 
@@ -139,8 +141,8 @@ async def enqueue(
     wide_bucket = _bucket_key(filters, widened=True)
 
     def index_keys(bucket: str) -> list[str]:
-        # The wide bucket isn't in the locations index.
-        return [] if bucket == wide_bucket else [_locations_key(filters)]
+        # The wide bucket isn't in the languages index.
+        return [] if bucket == wide_bucket else [_languages_key(filters)]
 
     skipped: list[tuple[str, uuid.UUID]] = []
     try:

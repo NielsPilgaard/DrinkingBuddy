@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class Filters(BaseModel):
-    language: str
+    language: Literal["da", "en"]
     drink_type: Literal["alcoholic", "non_alcoholic"]
     location: str
 
