@@ -10,6 +10,7 @@
     "backgroundColor": "#0e0e12",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.drinkingbuddy.app",
       "associatedDomains": ["applinks:app.drinking-buddy.app"],
       "infoPlist": {
         "NSCameraUsageDescription": "Camera access is needed for video calls.",
@@ -52,7 +53,7 @@
           "microphonePermission": "Microphone access is needed for calls."
         }
       ],
-      "@didit-protocol/sdk-react-native",
+      ["@didit-protocol/sdk-react-native", { "iosVariant": "core", "androidVariant": "core" }],
       "expo-status-bar"
     ]
   }

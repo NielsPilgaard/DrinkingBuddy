@@ -1,0 +1,99 @@
+# On-demand iOS simulator build on a GitHub-hosted Mac. Unsigned, so it needs
+# no Apple Developer account: the artifact runs in the iOS Simulator (on a Mac)
+# or on Appetize.io (in a browser), not on a real iPhone. Device builds and
+# TestFlight need signing - see tasks/16-manual-launch-steps.md.
+#
+# Release configuration, so the JS bundle is baked in and the app runs
+# without Metro (and without the dev-client launcher). The API URL is baked in
+# at build time - localhost only works for a simulator on the same Mac as the
+# backend; Appetize needs a publicly reachable API.
+#
+# macOS runner minutes count 10x against a private repo's free quota, so this
+# is manual-only, plus a run when this file itself changes.
+
+name: iOS build (simulator)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: API base URL baked into the app
+        default: http://localhost:8000
+  push:
+    paths:
+      - .github/workflows/ios-build.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-simulator:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      CI: 1
+      EXPO_PUBLIC_API_URL: ${{ inputs.api_url || 'http://localhost:8000' }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+
+      - name: Generate iOS project
+        run: npx expo prebuild --platform ios --no-install
+
+      - uses: actions/cache@v4
+        with:
+          path: app/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('app/package-lock.json', 'app/app.json') }}
+
+      - name: Install pods
+        working-directory: app/ios
+        run: pod install
+
+      - name: Build for simulator
+        working-directory: app/ios
+        run: |
+          set -o pipefail
+          xcodebuild -version
+          xcodebuild \
+            -workspace DrinkingBuddy.xcworkspace \
+            -scheme DrinkingBuddy \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild.log | { grep -E '^\*\*|error:' || true; }
+
+      - name: Zip app
+        working-directory: app/ios/build/Build/Products/Release-iphonesimulator
+        run: ditto -c -k --keepParent DrinkingBuddy.app "$GITHUB_WORKSPACE/DrinkingBuddy-simulator.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DrinkingBuddy-ios-simulator
+          path: DrinkingBuddy-simulator.zip
+          retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: app/ios/xcodebuild.log
+          if-no-files-found: ignore
