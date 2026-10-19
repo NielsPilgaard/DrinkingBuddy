@@ -28,6 +28,9 @@
     when:
       true: ${DEVICE_ROLE == 'a'}
     commands:
+      # Report lives in the in-call menu sheet, not the bottom bar.
+      - tapOn:
+          id: "call-menu-button"
       - tapOn:
           id: "call-report-button"
       - assertVisible:

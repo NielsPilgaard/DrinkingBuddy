@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Filters } from './filters';
 import { authedWebSocket } from './signaling';
-
-export type Filters = {
-  language: string;
-  drink_type: 'alcoholic' | 'non_alcoholic';
-  location: string;
-};
 
 export type MatchingStatus =
   | 'idle'
