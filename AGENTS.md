@@ -63,7 +63,7 @@ North star: D7 retention. Secondary: avg call duration.
 | DB | Postgres |
 | Matching queue state | Redis (ephemeral) |
 | TURN/STUN | Self-hosted coturn (~15-20% of calls need TURN relay) |
-| Hosting | Single Hetzner VPS, Docker Compose |
+| Hosting | Single OVHcloud VPS, Docker Compose |
 | Auth | OTP/magic-link only, no password (PRD §7) |
 | Browser (later) | Plain React web client, same backend |
 | Desktop (later, optional) | Tauri wrapper |

@@ -7,7 +7,7 @@ owners: Niels (eng)
 
 ## TL;DR
 
-Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single Hetzner VPS via Docker Compose. React Native (Expo) for iOS + Android MVP. Auth is OTP/magic-link only, no password (PRD §7). Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
+Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single OVHcloud VPS via Docker Compose. React Native (Expo) for iOS + Android MVP. Auth is OTP/magic-link only, no password (PRD §7). Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
 
 ---
 
@@ -38,9 +38,9 @@ Per PRD §7 (no password, lightweight identity anchor):
 - **STUN/TURN**: self-hosted **coturn** on the same VPS (or split to a second small VPS if load demands). Handles the ~15-20% of connections needing TURN relay (NAT traversal failure). Avoids per-minute fees from Twilio/Agora/Daily.co at MVP scale.
 - P2P direct connection (no TURN) for the majority of calls — near-zero bandwidth cost.
 
-## 5. Hosting — Hetzner VPS
+## 5. Hosting — OVHcloud VPS
 
-- Single Hetzner VPS (e.g. CX22 or similar tier), Docker Compose running: FastAPI app, coturn, Postgres, Redis.
+- Single OVHcloud VPS, Docker Compose running: FastAPI app, coturn, Postgres, Redis.
 - Scale path: pull coturn and/or Postgres onto a second box when load demands — not needed at MVP.
 
 ## 6. Moderation infra
@@ -66,7 +66,7 @@ No single stack unifies app+web+desktop with full webcam/mic control better than
 | DB | Postgres |
 | Queue/matching state | Redis |
 | TURN/STUN | Self-hosted coturn |
-| Hosting | Hetzner VPS, Docker Compose |
+| Hosting | OVHcloud VPS, Docker Compose |
 | Auth | OTP/magic-link only, no password |
 | Browser (later) | React web, same backend |
 | Desktop (later, optional) | Tauri wrapper around web client |
