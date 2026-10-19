@@ -56,7 +56,7 @@ npx expo start --dev-client
 
 JDK 24+ fails the native build at `configureCMakeDebug` ("A restricted method in java.lang.System has been called"). Point `JAVA_HOME` at JDK 17 or 21.
 
-**Physical Android phone, no cable:** `./scripts/phone.ps1 -Build` the first time, then `./scripts/phone.ps1`. See [docs/testing_app.md](docs/testing_app.md).
+**Physical Android phone, no cable (Linux):** `./scripts/phone.sh --build` the first time, then `./scripts/phone.sh`. See [docs/testing_app.md](docs/testing_app.md).
 
 With `EXPO_PUBLIC_API_URL` unset, a dev build calls port 8000 on the host Metro serves from, so a phone on the same wifi needs no config. Set it in `app/.env` to force a backend. Android emulator: `http://10.0.2.2:8000`, or `localhost` plus `adb reverse tcp:8000 tcp:8000`.
 
