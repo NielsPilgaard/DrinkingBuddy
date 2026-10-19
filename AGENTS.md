@@ -17,7 +17,7 @@ Don'ts: don't `docker plugin install` on the user's behalf (host-level, needs `-
 - `docs/prd.md` — product spec, source of truth for scope/behavior.
 - `docs/tech-stack.md` — stack decisions.
 - `docs/local_dev.md` — local dev setup (dependency managers, running services outside Docker).
-- `tasks/` — open task specs; `tasks/completed/` — done.
+- `tasks/` — open task specs; `tasks/completed/` — done. `tasks/README.md` — ordered index, shows next task.
 - `docs/mockups/prototype-match-screen.html` — throwaway UI mockup of in-call screen (full-bleed video + fly-in chat/menu drawer). Not production code.
 
 ## Core loop
