@@ -125,19 +125,17 @@ services:
       --no-cli
       --external-ip=${COTURN_PUBLIC_IP}
       --min-port=49152
-      --max-port=49172
-    ports:
-      - "3478:3478/udp"
-      - "3478:3478/tcp"
-      - "49152-49172:49152-49172/udp"
+      --max-port=50151
+    # Host networking: publishing 1000 relay ports through docker-proxy is slow
+    # and memory-hungry. Nothing reaches coturn over the Docker network - clients
+    # get its public host from the API (COTURN_HOST), so it needs no networks.
+    network_mode: host
     healthcheck:
       test: ["CMD-SHELL", "turnutils_stunclient 127.0.0.1 >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     logging: *loki-logging
-    networks:
-      - dokploy-network
 
 networks:
   dokploy-network:
