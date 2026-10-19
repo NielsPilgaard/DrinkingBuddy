@@ -1,12 +1,13 @@
 ---
 title: Manual setup steps (human-only)
 status: pending
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 depends_on: docs/deploy.md, tasks/05-ovhcloud-deploy.md
 description: >-
   Account sign-ups, credentials and hardware steps an agent can't do: Didit
-  account and keys, Apple Developer + EAS for iOS builds, and the firewall
-  range for coturn. Each item lists what unblocks once it's done.
+  account and keys, Apple Developer + EAS for iOS builds, and the domain,
+  VPS, firewall and SMTP setup for the deploy. Each item lists what unblocks
+  once it's done.
 purpose: Checklist of human-only steps that block agent tasks.
 ---
 
@@ -31,11 +32,19 @@ Agents can't create accounts, pay for programs, or run Xcode on this Windows mac
   - **No Mac:** `npx eas-cli build -p ios --profile development` builds in the cloud. Register test iPhones first with `npx eas-cli device:create`. This needs the Apple Developer account.
   - **No Mac, no Apple account (UI look only):** `npx eas-cli build -p ios --profile preview` makes a simulator build on the EAS free tier. Upload the `.app` to Appetize.io to click through it in a browser. The simulator has no real camera, so this won't show video.
 - [ ] Smoke-test on a real iPhone: sign up via magic link, pick filters, match with an Android device, use audio, video (with verified users), chat, report and Face ID re-login.
-- [ ] Magic links on iOS: host `https://app.drinking-buddy.app/.well-known/apple-app-site-association` with your Team ID and the bundle ID. Until then, use the `drinkingbuddy://` scheme.
+- [ ] Magic links on iOS: set `APPLE_TEAM_ID` in the prod env. The API then serves `https://app.drinking-buddy.app/.well-known/apple-app-site-association`. Until then, use the `drinkingbuddy://` scheme.
 
-## coturn relay ports (with task 05)
+## Deploy (unblocks task 05)
 
-- [ ] Open `3478/udp+tcp` and the relay range in `backend/docker-compose.prod.yml` (`49152-50151/udp`) in the OVHcloud VPS firewall and host `ufw`. See `docs/deploy.md`.
+Full order in `docs/deploy.md` → "Go-live runbook".
+
+- [ ] Buy `drinking-buddy.app`. Add A records for `api.`, `app.` and `grafana.` → VPS IP.
+- [ ] Order the OVHcloud VPS and install Dokploy on it.
+- [ ] Open `80/tcp`, `443/tcp`, `3478/udp+tcp` and the coturn relay range `49152-50151/udp` in the OVHcloud firewall and host `ufw`.
+- [ ] Scaleway Transactional Email: verify `drinking-buddy.app` as a sender domain (SPF/DKIM records) and create SMTP credentials.
+- [ ] Fill the prod env from `backend/.env.prod.example`: real secrets for every `changeme`, VPS IP for `COTURN_PUBLIC_IP`/`COTURN_HOST`.
+- [ ] Android magic links: put the SHA-256 fingerprint from `npx eas-cli credentials -p android` in `ANDROID_SHA256_CERT_FINGERPRINTS`.
+- [ ] Two-phone call test on different networks (checks in `docs/deploy.md`).
 
 ## Done when
 

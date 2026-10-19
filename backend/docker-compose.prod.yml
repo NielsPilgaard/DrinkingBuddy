@@ -13,6 +13,10 @@ services:
     command: sh -c "alembic upgrade head && python -m app.mini_games.seed"
     env_file:
       - .env
+    # Pinned here, not left to .env: "development" turns on the magic-link
+    # token echo (X-Test-Mode) and the dev secret defaults.
+    environment:
+      ENVIRONMENT: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -23,6 +27,10 @@ services:
     build: .
     env_file:
       - .env
+    # Pinned here, not left to .env: "development" turns on the magic-link
+    # token echo (X-Test-Mode) and the dev secret defaults.
+    environment:
+      ENVIRONMENT: production
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +57,12 @@ services:
       traefik.http.services.drinkingbuddy-api.loadbalancer.server.port: "8000"
       # WebSocket signaling shares the API's HTTP(S) router/port — Traefik upgrades
       # the connection automatically, no separate router needed.
+      # Magic-link host: only the link-verification files and the /verify
+      # fallback page (app/routers/app_links.py), not the rest of the API.
+      traefik.http.routers.drinkingbuddy-applinks.rule: "Host(`app.${DOMAIN}`) && (Path(`/verify`) || PathPrefix(`/.well-known/`))"
+      traefik.http.routers.drinkingbuddy-applinks.entrypoints: "websecure"
+      traefik.http.routers.drinkingbuddy-applinks.tls.certResolver: "letsencrypt"
+      traefik.http.routers.drinkingbuddy-applinks.service: "drinkingbuddy-api"
 
   # NOTE: grafana/otel-lgtm is a single-container demo/dev image (bundled
   # Grafana+Loki+Tempo+Prometheus, no clustering/HA). Known gap for prod —

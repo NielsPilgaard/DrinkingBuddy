@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,12 @@ class Settings(BaseSettings):
 
     app_deep_link_scheme: str = "drinkingbuddy"
     app_universal_link_base: str = "https://app.drinking-buddy.app"
+    # Served as /.well-known/apple-app-site-association and assetlinks.json on
+    # app.<DOMAIN> so iOS/Android verify the magic-link host. Empty -> 404.
+    app_bundle_id: str = "com.drinkingbuddy.app"
+    apple_team_id: str = ""
+    # Comma-separated SHA-256 signing cert fingerprints (AA:BB:...).
+    android_sha256_cert_fingerprints: str = ""
 
     magic_link_ttl_minutes: int = 15
     session_ttl_days: int = 30
@@ -74,11 +81,18 @@ if settings.environment != "development" and settings.chat_safety_moderation_sec
         "environments"
     )
 
-if (
-    settings.environment != "development"
-    and settings.chat_safety_flag_encryption_key == "CQ02dBuJfDFA30Yq9q3kdyoaC9YGYbZsDzWxi8Qects="
-):
-    raise RuntimeError(
-        "chat_safety_flag_encryption_key must be set to a real secret outside development "
-        "environments"
-    )
+if settings.environment != "development":
+    try:
+        Fernet(settings.chat_safety_flag_encryption_key)
+        valid_key = True
+    except ValueError:
+        valid_key = False
+    if (
+        not valid_key
+        or settings.chat_safety_flag_encryption_key
+        == "CQ02dBuJfDFA30Yq9q3kdyoaC9YGYbZsDzWxi8Qects="
+    ):
+        raise RuntimeError(
+            "chat_safety_flag_encryption_key must be set to a real Fernet key outside "
+            "development environments"
+        )

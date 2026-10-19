@@ -1,7 +1,7 @@
 ---
 title: OVHcloud deployment
 status: pending
-last_updated: 2026-08-19
+last_updated: 2026-10-19
 depends_on: tasks/04-webrtc-signaling.md, docs/tech-stack.md
 ---
 
@@ -22,6 +22,16 @@ Move the local Docker Compose stack (API, Postgres, Redis, coturn) to a single O
 
 ### Mobile app (`/app`)
 - Point app config (dev/staging/prod) at the deployed API/websocket URLs instead of localhost.
+
+## Progress
+
+Repo side is ready; what's left is human-only (`tasks/16-manual-launch-steps.md` → "Deploy") plus the checks in `docs/deploy.md` → "Done-when checks".
+
+- Prod compose for Dokploy, coturn on host networking, Grafana behind basic auth (`backend/docker-compose.prod.yml`).
+- Domain: `drinking-buddy.app`. EAS `preview`/`production` profiles bake in `https://api.drinking-buddy.app`.
+- `ENVIRONMENT=production` pinned in compose. Startup refuses placeholder COTURN/Didit/chat-safety secrets.
+- Magic-link host `app.<DOMAIN>` served by the API: AASA, `assetlinks.json`, `/verify` browser fallback.
+- Postgres backups: Dokploy Schedules, configured in its UI after deploy.
 
 ## Explicitly out of scope
 

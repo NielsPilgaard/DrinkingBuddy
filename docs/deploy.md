@@ -1,6 +1,29 @@
 ---
-description: VPS deploy notes — host-level setup steps not captured in docker-compose.yml. Living doc, grows as deploy work lands.
+title: VPS deploy
+status: active
+description: VPS deploy notes — go-live runbook plus host-level setup steps not captured in docker-compose.yml. Living doc, grows as deploy work lands.
+purpose: How to take the backend stack live on the OVHcloud VPS and check it works.
 ---
+
+## Go-live runbook
+
+Order matters: DNS must resolve before Traefik can get Let's Encrypt certs.
+
+1. Buy `drinking-buddy.app` and order the OVHcloud VPS (human, `tasks/16-manual-launch-steps.md`).
+2. DNS: A records for `api.`, `app.` and `grafana.drinking-buddy.app` → VPS IP.
+3. On the VPS: install Docker, the Loki plugin (below), then Dokploy (`curl -sSL https://dokploy.com/install.sh | sh`). Open `80/tcp`, `443/tcp`, the coturn ports (below) and Dokploy's `3000/tcp` (close it again once Dokploy sits behind its own domain).
+4. In Dokploy: new Docker Compose app from this repo, compose path `backend/docker-compose.prod.yml`. Paste [`backend/.env.prod.example`](../backend/.env.prod.example) into the env UI and replace every `changeme`, `COTURN_PUBLIC_IP`/`COTURN_HOST` and the SMTP credentials. The API refuses to start while a secret is still a placeholder.
+5. Deploy, then run the checks below.
+6. Set up Postgres backups (below).
+
+### Done-when checks (task 05)
+
+- `curl https://api.drinking-buddy.app/health` → `{"status":"ok"}` with a valid cert.
+- `curl -i https://api.drinking-buddy.app/auth/request-link -H 'X-Test-Mode: 1' -H 'content-type: application/json' -d '{"email":"you@example.com"}'` → response has **no** token. If it does, `ENVIRONMENT` isn't `production`.
+- `https://app.drinking-buddy.app/.well-known/assetlinks.json` and `/apple-app-site-association` return JSON once `ANDROID_SHA256_CERT_FINGERPRINTS` / `APPLE_TEAM_ID` are set (404 before).
+- TURN reachable from outside: make a credential on the server with `docker compose exec api python -c "import uuid; from app.signaling.turn import generate_turn_credentials as g; print(g(uuid.uuid4()).ice_servers[1])"`, then paste the `turn:` URL, username and credential into https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/ from a machine on another network. A `relay` candidate with the VPS IP means TURN works.
+- Two phones on different networks (e.g. one on Wi-Fi, one on mobile data) built with the `preview`/`production` EAS profile (both bake in `https://api.drinking-buddy.app`) match and hold a call. Repeat with one phone forced through TURN (Trickle ICE check above, or a mobile carrier that blocks direct UDP).
+- `docker restart` the `postgres` container; existing accounts still sign in.
 
 ## Docker plugins (one-time host setup)
 
@@ -22,7 +45,11 @@ Prod stack: [`backend/docker-compose.prod.yml`](../backend/docker-compose.prod.y
 - Grafana (via `otel-lgtm`, ships with no built-in auth) is fronted by Traefik basic-auth middleware — set `GRAFANA_BASICAUTH_USERS` (generate with `openssl passwd -apr1`, escape every literal `$` as `$$` in the `.env` file).
 - Copy [`backend/.env.prod.example`](../backend/.env.prod.example) → `.env` on the server (or into Dokploy's env UI) and fill real secrets + `DOMAIN` + `COTURN_PUBLIC_IP`.
 
-DNS: point `api.<DOMAIN>` and `grafana.<DOMAIN>` A records at the VPS IP. `drinkingbuddy.app` is taken — real domain still TBD, `DOMAIN` env var keeps the compose file domain-agnostic.
+DNS: point `api.<DOMAIN>`, `app.<DOMAIN>` and `grafana.<DOMAIN>` A records at the VPS IP. Domain is `drinking-buddy.app`; the `DOMAIN` env var keeps the compose file domain-agnostic.
+
+`app.<DOMAIN>` is the magic-link host. Traefik routes only `/verify` and `/.well-known/*` there to the API ([`app/routers/app_links.py`](../backend/app/routers/app_links.py)), which serves the iOS/Android link-verification files from `APPLE_TEAM_ID` / `ANDROID_SHA256_CERT_FINGERPRINTS` plus a browser fallback that bounces to the `drinkingbuddy://` scheme.
+
+`ENVIRONMENT=production` is pinned in the compose file for `api` and `migrate`, not read from `.env`: `development` would echo magic-link tokens to any caller sending `X-Test-Mode: 1`.
 
 ## Postgres backups
 
