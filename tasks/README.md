@@ -18,7 +18,7 @@ Keep this file in sync when a task is added, finished (moved to `completed/`), o
 
 | # | Task | Who | Waits on | Why this slot |
 |---|---|---|---|---|
-| 1 | [05 — OVHcloud deploy](05-ovhcloud-deploy.md) | agent + human | Domain + VPS bought, coturn firewall (16) | Nothing reaches real users until the stack is public. Config exists (`docs/deploy.md`); nothing is deployed. |
+| 1 | [05 — OVHcloud deploy](05-ovhcloud-deploy.md) | human | 16 → "Deploy" | Repo side done (see task Progress). Left: buy domain + VPS, deploy, run the checks in `docs/deploy.md`. |
 | 2 | [16 — Manual launch steps](16-manual-launch-steps.md) | human | — | Didit account/keys, Apple Developer + EAS, VPS firewall. Unblocks 05 (firewall), 15 (Didit) and iOS testing. |
 | 3 | [11 — CSAM reporting runbook](11-csam-reporting.md) | human (legal) + agent | — | Reporting duty applies to user reports from day one, so needed before the invite pool goes live. Must also precede 07. |
 | 4 | [15 — Age verification live test](15-age-verification-live-test.md) | agent | 16 (Didit keys) | Turns mock-tested Didit into verified. Video stays gated until then; audio/text work without it. |
@@ -57,4 +57,4 @@ In [`completed/`](completed/). Their frontmatter `status` fields are stale; bein
 | [Drink counter](completed/beer-counter.md) | In-call drink tally. |
 | [Ice-breaker](completed/ice-breaker.md) | Conversation-starter prompts. |
 | [Mini-games](completed/mini-games.md) | Trivia, would-you-rather, never-have-I-ever. |
-| [Mobile E2E (Maestro)](completed/mobile-e2e-maestro.md) | Two-device app-level E2E. Open review flags: [NEEDS-HUMAN-REVIEW](completed/NEEDS-HUMAN-REVIEW-maestro-e2e.md). |
+| [Mobile E2E (Maestro)](completed/mobile-e2e-maestro.md) | Two-device app-level E2E. |
