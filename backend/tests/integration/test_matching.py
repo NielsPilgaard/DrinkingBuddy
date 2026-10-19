@@ -9,8 +9,8 @@ from app.matching.queue import QUEUE_KEY_PREFIX
 pytestmark = pytest.mark.integration
 
 FILTERS_DK_EN_ALC = {"language": "en", "drink_type": "alcoholic", "location": "dk"}
-FILTERS_NO_EN_ALC = {"language": "en", "drink_type": "alcoholic", "location": "no"}
 FILTERS_DK_EN_NONALC = {"language": "en", "drink_type": "non_alcoholic", "location": "dk"}
+FILTERS_DK_DA_ALC = {"language": "da", "drink_type": "alcoholic", "location": "dk"}
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -72,6 +72,38 @@ async def test_incompatible_filters_do_not_pair(ws_client, monkeypatch):
 
         await ws_a.send_json({"type": "leave"})
         await ws_b.send_json({"type": "leave"})
+
+
+@pytest.mark.asyncio
+async def test_different_languages_do_not_pair(ws_client, monkeypatch):
+    token_a, _ = await _signup_and_get_token(ws_client, monkeypatch, "dina@example.com")
+    token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "emil@example.com")
+
+    async with (
+        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b,
+    ):
+        await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
+        waiting_a = await ws_a.receive_json()
+        assert waiting_a["type"] == "waiting"
+
+        await ws_b.send_json({"type": "join", "filters": FILTERS_DK_DA_ALC})
+        waiting_b = await ws_b.receive_json()
+        assert waiting_b["type"] == "waiting"
+
+        await ws_a.send_json({"type": "leave"})
+        await ws_b.send_json({"type": "leave"})
+
+
+@pytest.mark.asyncio
+async def test_unsupported_language_is_rejected(ws_client, monkeypatch):
+    token, _ = await _signup_and_get_token(ws_client, monkeypatch, "frida@example.com")
+
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token)) as ws:
+        await ws.send_json({"type": "join", "filters": {**FILTERS_DK_EN_ALC, "language": "sv"}})
+        error = await ws.receive_json()
+
+    assert error["type"] == "error"
 
 
 @pytest.mark.asyncio
@@ -158,7 +190,7 @@ async def test_disconnect_clears_queue_state(ws_client, redis_container, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_widen_search_pairs_across_locations(ws_client, monkeypatch):
+async def test_widen_search_pairs_across_languages(ws_client, monkeypatch):
     token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "kevin@example.com")
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "laura@example.com")
 
@@ -169,7 +201,7 @@ async def test_widen_search_pairs_across_locations(ws_client, monkeypatch):
 
         async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b:
             await ws_b.send_json(
-                {"type": "join", "filters": FILTERS_NO_EN_ALC, "widen_search": True}
+                {"type": "join", "filters": FILTERS_DK_DA_ALC, "widen_search": True}
             )
 
             matched_b = await ws_b.receive_json()
@@ -179,27 +211,6 @@ async def test_widen_search_pairs_across_locations(ws_client, monkeypatch):
     assert matched_b["type"] == "matched"
     assert matched_a["partner_id"] == user_b_id
     assert matched_b["partner_id"] == user_a_id
-
-
-@pytest.mark.asyncio
-async def test_without_widen_search_different_locations_do_not_pair(ws_client, monkeypatch):
-    token_a, _ = await _signup_and_get_token(ws_client, monkeypatch, "mallory@example.com")
-    token_b, _ = await _signup_and_get_token(ws_client, monkeypatch, "niaj@example.com")
-
-    async with (
-        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as ws_a,
-        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as ws_b,
-    ):
-        await ws_a.send_json({"type": "join", "filters": FILTERS_DK_EN_ALC})
-        waiting_a = await ws_a.receive_json()
-        assert waiting_a["type"] == "waiting"
-
-        await ws_b.send_json({"type": "join", "filters": FILTERS_NO_EN_ALC})
-        waiting_b = await ws_b.receive_json()
-        assert waiting_b["type"] == "waiting"
-
-        await ws_a.send_json({"type": "leave"})
-        await ws_b.send_json({"type": "leave"})
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/context';
-import { type Filters, type MatchResult, useMatching } from '../call/useMatching';
+import {
+  DEFAULT_FILTERS,
+  DRINK_TYPES,
+  type Filters,
+  getStoredFilters,
+  LANGUAGES,
+  setStoredFilters,
+} from '../call/filters';
+import { type MatchResult, useMatching } from '../call/useMatching';
+import { colors } from '../theme';
 import { CallEndedScreen } from './CallEndedScreen';
 import { CallScreen } from './CallScreen';
 
@@ -11,26 +20,68 @@ type MatchScreenProps = {
   userId: string;
 };
 
-const DEFAULT_FILTERS: Filters = {
-  language: 'en',
-  drink_type: 'alcoholic',
-  location: 'dk',
+type OptionRowProps<T extends string> = {
+  label: string;
+  testIDPrefix: string;
+  options: { value: T; label: string }[];
+  selected: T;
+  onSelect: (value: T) => void;
 };
+
+function OptionRow<T extends string>({
+  label,
+  testIDPrefix,
+  options,
+  selected,
+  onSelect,
+}: OptionRowProps<T>) {
+  return (
+    <View style={styles.optionGroup}>
+      <Text style={styles.optionLabel}>{label}</Text>
+      <View style={styles.optionRow}>
+        {options.map((option) => {
+          const isSelected = option.value === selected;
+          return (
+            <Pressable
+              key={option.value}
+              testID={`${testIDPrefix}-${option.value}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              style={[styles.option, isSelected && styles.optionSelected]}
+              onPress={() => onSelect(option.value)}
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenProps) {
   const { status, match, join, widenSearch, leave } = useMatching(apiBaseUrl, sessionToken, userId);
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [endedMatch, setEndedMatch] = useState<MatchResult | null>(null);
   const { signOut } = useAuth();
 
   useEffect(() => {
-    join(DEFAULT_FILTERS);
-    return () => leave();
-  }, [join, leave]);
+    getStoredFilters()
+      .then(setFilters)
+      .catch(() => {});
+  }, []);
 
   // The session expired or was revoked: back to the login screen.
   useEffect(() => {
     if (status === 'unauthenticated') signOut();
   }, [status, signOut]);
+
+  const updateFilters = (next: Filters) => {
+    setFilters(next);
+    setStoredFilters(next).catch(() => {});
+  };
 
   if (status === 'suspended') {
     return (
@@ -49,7 +100,12 @@ export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenPro
         callId={endedMatch.callId}
         onContinue={() => {
           setEndedMatch(null);
-          join(DEFAULT_FILTERS);
+          join(filters);
+        }}
+        onBack={() => {
+          setEndedMatch(null);
+          // Without leave(), status stays 'matched' and the call re-renders.
+          leave();
         }}
       />
     );
@@ -64,7 +120,9 @@ export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenPro
         partnerId={match.partnerId}
         isInitiator={match.isInitiator}
         videoEligible={match.videoEligible}
-        drinkType={DEFAULT_FILTERS.drink_type}
+        drinkType={filters.drink_type}
+        language={filters.language}
+        onSkip={() => join(filters)}
         onCallEnded={() => setEndedMatch(match)}
       />
     );
@@ -72,28 +130,60 @@ export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenPro
 
   return (
     <View style={styles.container} testID="match-screen">
-      {status === 'widen_prompt' ? (
+      {status === 'idle' ? (
         <>
-          <Text style={styles.status}>No one found nearby. Search all regions instead?</Text>
+          <OptionRow
+            label="Language"
+            testIDPrefix="match-language"
+            options={LANGUAGES}
+            selected={filters.language}
+            onSelect={(language) => updateFilters({ ...filters, language })}
+          />
+          <OptionRow
+            label="What's in your glass?"
+            testIDPrefix="match-drink"
+            options={DRINK_TYPES}
+            selected={filters.drink_type}
+            onSelect={(drink_type) => updateFilters({ ...filters, drink_type })}
+          />
+          <Pressable
+            testID="match-find-button"
+            style={[styles.button, styles.findButton]}
+            onPress={() => join(filters)}
+          >
+            <Text style={styles.buttonText}>Find a match</Text>
+          </Pressable>
+        </>
+      ) : status === 'widen_prompt' ? (
+        <>
+          <Text style={styles.status}>
+            No one found yet. Match with people who speak any language?
+          </Text>
           <Pressable
             testID="match-widen-search-button"
             style={styles.button}
-            onPress={() => widenSearch(DEFAULT_FILTERS)}
+            onPress={() => widenSearch(filters)}
           >
-            <Text style={styles.buttonText}>Widen search</Text>
+            <Text style={styles.buttonText}>Any language</Text>
           </Pressable>
           <Pressable
             testID="match-keep-waiting-button"
             style={styles.secondaryButton}
-            onPress={() => join(DEFAULT_FILTERS)}
+            onPress={() => join(filters)}
           >
-            <Text style={styles.buttonText}>Keep waiting</Text>
+            <Text style={styles.secondaryButtonText}>Keep waiting</Text>
+          </Pressable>
+          <Pressable testID="match-cancel-button" style={styles.secondaryButton} onPress={leave}>
+            <Text style={styles.secondaryButtonText}>Cancel</Text>
           </Pressable>
         </>
       ) : (
         <>
-          <ActivityIndicator />
+          <ActivityIndicator color={colors.textMuted} />
           <Text style={styles.status}>Looking for a match…</Text>
+          <Pressable testID="match-cancel-button" style={styles.secondaryButton} onPress={leave}>
+            <Text style={styles.secondaryButtonText}>Cancel</Text>
+          </Pressable>
         </>
       )}
       <Pressable testID="match-sign-out-button" style={styles.signOut} onPress={signOut}>
@@ -106,29 +196,69 @@ export function MatchScreen({ apiBaseUrl, sessionToken, userId }: MatchScreenPro
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050506',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
   status: {
-    color: '#f2f2f5',
+    color: colors.text,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  optionGroup: {
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  optionLabel: {
+    color: colors.textMuted,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  option: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  optionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceSelected,
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  findButton: {
+    marginTop: 12,
+  },
   secondaryButton: {
-    backgroundColor: '#1f1f28',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
+  },
+  secondaryButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  optionText: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  optionTextSelected: {
+    color: colors.primary,
   },
   signOut: {
     position: 'absolute',
@@ -136,6 +266,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   signOutText: {
-    color: '#8a8a96',
+    color: colors.textMuted,
   },
 });

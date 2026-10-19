@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { requestLinkEndpointAuthRequestLinkPost } from '../api/generated/sdk.gen';
+import { colors } from '../theme';
 
 function isValidBirthdate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -69,6 +70,8 @@ export function LoginScreen() {
         testID="login-email-input"
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={colors.textMuted}
+        keyboardAppearance="dark"
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -79,6 +82,8 @@ export function LoginScreen() {
         testID="login-birthdate-input"
         style={styles.input}
         placeholder="Birthdate (YYYY-MM-DD) — first time only"
+        placeholderTextColor={colors.textMuted}
+        keyboardAppearance="dark"
         keyboardType="number-pad"
         maxLength={10}
         value={birthdate}
@@ -92,7 +97,7 @@ export function LoginScreen() {
         disabled={!canSubmit}
       >
         {submitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.buttonText}>Send sign-in link</Text>
         )}
@@ -106,31 +111,34 @@ const styles = StyleSheet.create({
     flex: 1,
     // The parent centers its children; stretch so the inputs get full width.
     alignSelf: 'stretch',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: 24,
   },
   title: {
+    color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
   },
   subtitle: {
     textAlign: 'center',
-    color: '#444',
+    color: colors.textMuted,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   button: {
     width: '100%',
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -139,11 +147,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
   },
   error: {
-    color: 'red',
+    color: colors.danger,
     textAlign: 'center',
   },
 });
