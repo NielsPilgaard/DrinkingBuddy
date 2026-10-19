@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { requestLinkEndpointAuthRequestLinkPost } from '../api/generated/sdk.gen';
+import { colors } from '../theme';
 
 function isValidBirthdate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -9,6 +10,12 @@ function isValidBirthdate(value: string): boolean {
   return (
     date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
+}
+
+/** Digits only, dashes inserted as you type: "19900101" -> "1990-01-01". */
+function formatBirthdate(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6)].filter(Boolean).join('-');
 }
 
 export function LoginScreen() {
@@ -63,6 +70,8 @@ export function LoginScreen() {
         testID="login-email-input"
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={colors.textMuted}
+        keyboardAppearance="dark"
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -73,9 +82,12 @@ export function LoginScreen() {
         testID="login-birthdate-input"
         style={styles.input}
         placeholder="Birthdate (YYYY-MM-DD) — first time only"
-        autoCapitalize="none"
+        placeholderTextColor={colors.textMuted}
+        keyboardAppearance="dark"
+        keyboardType="number-pad"
+        maxLength={10}
         value={birthdate}
-        onChangeText={setBirthdate}
+        onChangeText={(value) => setBirthdate(formatBirthdate(value))}
       />
       {error && <Text style={styles.error}>{error}</Text>}
       <Pressable
@@ -85,7 +97,7 @@ export function LoginScreen() {
         disabled={!canSubmit}
       >
         {submitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.buttonText}>Send sign-in link</Text>
         )}
@@ -97,31 +109,36 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    // The parent centers its children; stretch so the inputs get full width.
+    alignSelf: 'stretch',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: 24,
   },
   title: {
+    color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
   },
   subtitle: {
     textAlign: 'center',
-    color: '#444',
+    color: colors.textMuted,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   button: {
     width: '100%',
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -130,11 +147,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
   },
   error: {
-    color: 'red',
+    color: colors.danger,
     textAlign: 'center',
   },
 });

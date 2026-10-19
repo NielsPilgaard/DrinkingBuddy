@@ -6,7 +6,8 @@
     "scheme": "drinkingbuddy",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0e0e12",
     "ios": {
       "supportsTablet": true,
       "associatedDomains": ["applinks:app.drinking-buddy.app"],

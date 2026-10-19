@@ -36,7 +36,7 @@ async def test_signup_and_verify(client, monkeypatch) -> None:
     assert len(sent) == 1
 
     token = _token_from_deep_link(sent[0])
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
 
     assert verify_response.status_code == 200
     body = verify_response.json()
@@ -61,7 +61,7 @@ async def test_returning_user_ignores_birthdate(client, monkeypatch) -> None:
     assert len(sent) == 2
 
     token = _token_from_deep_link(sent[1])
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     assert verify_response.status_code == 200
 
 
@@ -87,7 +87,7 @@ async def test_underage_signup_silently_rejected(client, monkeypatch) -> None:
     assert response.status_code == 200
     assert len(sent) == 0
 
-    verify_response = await client.get("/auth/verify", params={"token": "irrelevant"})
+    verify_response = await client.post("/auth/verify", json={"token": "irrelevant"})
     assert verify_response.status_code == 401
 
 
@@ -131,14 +131,14 @@ async def test_email_lookup_is_case_insensitive(client, monkeypatch) -> None:
     assert len(sent) == 2
 
     token = _token_from_deep_link(sent[1])
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     assert verify_response.status_code == 200
     assert verify_response.json()["email"] == "mixed-case@example.com"
 
 
 @pytest.mark.asyncio
 async def test_verify_rejects_unknown_token(client) -> None:
-    response = await client.get("/auth/verify", params={"token": "not-a-real-token"})
+    response = await client.post("/auth/verify", json={"token": "not-a-real-token"})
     assert response.status_code == 401
 
 
@@ -152,10 +152,10 @@ async def test_magic_link_is_single_use(client, monkeypatch) -> None:
     )
     token = _token_from_deep_link(sent[0])
 
-    first = await client.get("/auth/verify", params={"token": token})
+    first = await client.post("/auth/verify", json={"token": token})
     assert first.status_code == 200
 
-    second = await client.get("/auth/verify", params={"token": token})
+    second = await client.post("/auth/verify", json={"token": token})
     assert second.status_code == 401
 
 
@@ -168,7 +168,7 @@ async def test_logout_revokes_session(client, db_session, monkeypatch) -> None:
         json={"email": "logout@example.com", "birthdate": "2000-01-01"},
     )
     token = _token_from_deep_link(sent[0])
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     session_token = verify_response.json()["session_token"]
 
     assert await auth_service.get_user_for_session_token(db_session, session_token) is not None
@@ -190,7 +190,7 @@ async def test_logout_is_idempotent_on_already_revoked_session(client, monkeypat
         json={"email": "logout-twice@example.com", "birthdate": "2000-01-01"},
     )
     token = _token_from_deep_link(sent[0])
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     session_token = verify_response.json()["session_token"]
 
     headers = {"Authorization": f"Bearer {session_token}"}
@@ -267,7 +267,7 @@ async def test_debug_token_returned_in_development_environment_with_header(
     assert debug_token
     assert debug_token == _token_from_deep_link(sent[0])
 
-    verify_response = await client.get("/auth/verify", params={"token": debug_token})
+    verify_response = await client.post("/auth/verify", json={"token": debug_token})
     assert verify_response.status_code == 200
 
 

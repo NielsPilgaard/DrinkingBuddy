@@ -14,7 +14,7 @@ flows in CI**, several pieces (Maestro CLI multi-device behavior, the exact
 
 - [Maestro CLI](https://maestro.mobile.dev) installed.
 - A running backend, reachable from the simulator/emulator, booted with
-  `ENVIRONMENT=test` so `/auth/request-link` echoes the sign-in token (see
+  `ENVIRONMENT=development` so `/auth/request-link` echoes the sign-in token (see
   `backend/app/routers/auth.py`):
 
   ```powershell
@@ -62,7 +62,7 @@ Flows call `POST /auth/request-link` directly with header `X-Test-Mode: 1`
 and read `debug_token` from the JSON response, then open
 `drinkingbuddy://verify?token=<token>` via Maestro's `openLink` — no email
 inbox involved. This only works when the backend is booted with
-`ENVIRONMENT=test`; see `backend/docker-compose.e2e.yml` and
+`ENVIRONMENT=development`; see `backend/docker-compose.e2e.yml` and
 `app/routers/auth.py`. Never point these flows at a non-test backend — the
 header alone does nothing there by design.
 

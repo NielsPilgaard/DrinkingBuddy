@@ -15,6 +15,78 @@ export type BlockBody = {
 };
 
 /**
+ * FlaggedMessageDetail
+ */
+export type FlaggedMessageDetail = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Call Session Id
+     */
+    call_session_id: string;
+    /**
+     * Sender Id
+     */
+    sender_id: string;
+    /**
+     * Recipient Id
+     */
+    recipient_id: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Matched Pattern Slug
+     */
+    matched_pattern_slug: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * FlaggedMessageSummary
+ */
+export type FlaggedMessageSummary = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Call Session Id
+     */
+    call_session_id: string;
+    /**
+     * Sender Id
+     */
+    sender_id: string;
+    /**
+     * Recipient Id
+     */
+    recipient_id: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Matched Pattern Slug
+     */
+    matched_pattern_slug: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -22,6 +94,62 @@ export type HttpValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * PatternRuleBody
+ */
+export type PatternRuleBody = {
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Pattern
+     */
+    pattern: string;
+};
+
+/**
+ * PatternRuleOut
+ */
+export type PatternRuleOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Category
+     */
+    category: string;
+    /**
+     * Pattern
+     */
+    pattern: string;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Created By
+     */
+    created_by: string;
+    /**
+     * Created At
+     */
+    created_at: string;
 };
 
 /**
@@ -64,6 +192,10 @@ export type RequestLinkResponse = {
      * Detail
      */
     detail?: string;
+    /**
+     * Debug Token
+     */
+    debug_token?: string | null;
 };
 
 /**
@@ -145,6 +277,16 @@ export type VerificationStatusResponse = {
 };
 
 /**
+ * VerifyBody
+ */
+export type VerifyBody = {
+    /**
+     * Token
+     */
+    token: string;
+};
+
+/**
  * VerifyResponse
  */
 export type VerifyResponse = {
@@ -184,6 +326,12 @@ export type HealthHealthGetResponse = HealthHealthGetResponses[keyof HealthHealt
 
 export type RequestLinkEndpointAuthRequestLinkPostData = {
     body: RequestLinkBody;
+    headers?: {
+        /**
+         * X-Test-Mode
+         */
+        'x-test-mode'?: string | null;
+    };
     path?: never;
     query?: never;
     url: '/auth/request-link';
@@ -207,35 +355,30 @@ export type RequestLinkEndpointAuthRequestLinkPostResponses = {
 
 export type RequestLinkEndpointAuthRequestLinkPostResponse = RequestLinkEndpointAuthRequestLinkPostResponses[keyof RequestLinkEndpointAuthRequestLinkPostResponses];
 
-export type VerifyEndpointAuthVerifyGetData = {
-    body?: never;
+export type VerifyEndpointAuthVerifyPostData = {
+    body: VerifyBody;
     path?: never;
-    query: {
-        /**
-         * Token
-         */
-        token: string;
-    };
+    query?: never;
     url: '/auth/verify';
 };
 
-export type VerifyEndpointAuthVerifyGetErrors = {
+export type VerifyEndpointAuthVerifyPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type VerifyEndpointAuthVerifyGetError = VerifyEndpointAuthVerifyGetErrors[keyof VerifyEndpointAuthVerifyGetErrors];
+export type VerifyEndpointAuthVerifyPostError = VerifyEndpointAuthVerifyPostErrors[keyof VerifyEndpointAuthVerifyPostErrors];
 
-export type VerifyEndpointAuthVerifyGetResponses = {
+export type VerifyEndpointAuthVerifyPostResponses = {
     /**
      * Successful Response
      */
     200: VerifyResponse;
 };
 
-export type VerifyEndpointAuthVerifyGetResponse = VerifyEndpointAuthVerifyGetResponses[keyof VerifyEndpointAuthVerifyGetResponses];
+export type VerifyEndpointAuthVerifyPostResponse = VerifyEndpointAuthVerifyPostResponses[keyof VerifyEndpointAuthVerifyPostResponses];
 
 export type LogoutEndpointAuthLogoutPostData = {
     body?: never;
@@ -302,6 +445,179 @@ export type BlockEndpointBlockPostResponses = {
 };
 
 export type BlockEndpointBlockPostResponse = BlockEndpointBlockPostResponses[keyof BlockEndpointBlockPostResponses];
+
+export type ListFlagsEndpointModerationChatSafetyFlagsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/moderation/chat-safety/flags';
+};
+
+export type ListFlagsEndpointModerationChatSafetyFlagsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListFlagsEndpointModerationChatSafetyFlagsGetError = ListFlagsEndpointModerationChatSafetyFlagsGetErrors[keyof ListFlagsEndpointModerationChatSafetyFlagsGetErrors];
+
+export type ListFlagsEndpointModerationChatSafetyFlagsGetResponses = {
+    /**
+     * Response List Flags Endpoint Moderation Chat Safety Flags Get
+     *
+     * Successful Response
+     */
+    200: Array<FlaggedMessageSummary>;
+};
+
+export type ListFlagsEndpointModerationChatSafetyFlagsGetResponse = ListFlagsEndpointModerationChatSafetyFlagsGetResponses[keyof ListFlagsEndpointModerationChatSafetyFlagsGetResponses];
+
+export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path: {
+        /**
+         * Flag Id
+         */
+        flag_id: string;
+    };
+    query?: never;
+    url: '/moderation/chat-safety/flags/{flag_id}';
+};
+
+export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetError = GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors[keyof GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors];
+
+export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: FlaggedMessageDetail;
+};
+
+export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse = GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses[keyof GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses];
+
+export type ListPatternsEndpointModerationChatSafetyPatternsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/moderation/chat-safety/patterns';
+};
+
+export type ListPatternsEndpointModerationChatSafetyPatternsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListPatternsEndpointModerationChatSafetyPatternsGetError = ListPatternsEndpointModerationChatSafetyPatternsGetErrors[keyof ListPatternsEndpointModerationChatSafetyPatternsGetErrors];
+
+export type ListPatternsEndpointModerationChatSafetyPatternsGetResponses = {
+    /**
+     * Response List Patterns Endpoint Moderation Chat Safety Patterns Get
+     *
+     * Successful Response
+     */
+    200: Array<PatternRuleOut>;
+};
+
+export type ListPatternsEndpointModerationChatSafetyPatternsGetResponse = ListPatternsEndpointModerationChatSafetyPatternsGetResponses[keyof ListPatternsEndpointModerationChatSafetyPatternsGetResponses];
+
+export type UpsertPatternEndpointModerationChatSafetyPatternsPutData = {
+    body: PatternRuleBody;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/moderation/chat-safety/patterns';
+};
+
+export type UpsertPatternEndpointModerationChatSafetyPatternsPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpsertPatternEndpointModerationChatSafetyPatternsPutError = UpsertPatternEndpointModerationChatSafetyPatternsPutErrors[keyof UpsertPatternEndpointModerationChatSafetyPatternsPutErrors];
+
+export type UpsertPatternEndpointModerationChatSafetyPatternsPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: PatternRuleOut;
+};
+
+export type UpsertPatternEndpointModerationChatSafetyPatternsPutResponse = UpsertPatternEndpointModerationChatSafetyPatternsPutResponses[keyof UpsertPatternEndpointModerationChatSafetyPatternsPutResponses];
+
+export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path: {
+        /**
+         * Slug
+         */
+        slug: string;
+        /**
+         * Version
+         */
+        version: number;
+    };
+    query?: never;
+    url: '/moderation/chat-safety/patterns/{slug}/rollback/{version}';
+};
+
+export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError = RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors[keyof RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors];
+
+export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: PatternRuleOut;
+};
+
+export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse = RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses[keyof RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses];
 
 export type StartVerificationEndpointVerifyStartPostData = {
     body: StartVerificationBody;

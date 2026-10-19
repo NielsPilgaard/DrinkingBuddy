@@ -19,6 +19,10 @@ pytestmark = pytest.mark.integration
 FILTERS = {"language": "en", "drink_type": "alcoholic", "location": "dk"}
 
 
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, uuid.UUID]:
     sent: list[str] = []
     monkeypatch.setattr(
@@ -28,7 +32,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, u
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
 
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], uuid.UUID(body["user_id"])
 
@@ -39,12 +43,12 @@ async def test_full_call_flow_match_to_report(ws_client, monkeypatch):
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "flow-b@example.com")
 
     # 1. Both users join the matching queue and get paired.
-    async with ws_client.websocket(f"/matching/ws?token={token_a}") as match_a:
+    async with ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as match_a:
         await match_a.send_json({"type": "join", "filters": FILTERS})
         waiting = await match_a.receive_json()
         assert waiting["type"] == "waiting"
 
-        async with ws_client.websocket(f"/matching/ws?token={token_b}") as match_b:
+        async with ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as match_b:
             await match_b.send_json({"type": "join", "filters": FILTERS})
 
             matched_b = await match_b.receive_json()
@@ -57,10 +61,14 @@ async def test_full_call_flow_match_to_report(ws_client, monkeypatch):
     assert call_id == matched_b["call_id"]
 
     # 2. Both users connect to signaling using the call_id handed off by matching.
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as sig_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as sig_a:
         await sig_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as sig_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as sig_b:
             await sig_b.receive_json()  # turn creds
             await sig_b.receive_json()  # peer_joined
             await sig_a.receive_json()  # peer_joined
@@ -110,8 +118,8 @@ async def test_blocked_user_is_not_rematched(ws_client, monkeypatch, db_session)
     await db_session.commit()
 
     async with (
-        ws_client.websocket(f"/matching/ws?token={token_a}") as match_a,
-        ws_client.websocket(f"/matching/ws?token={token_b}") as match_b,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_a)) as match_a,
+        ws_client.websocket("/matching/ws", headers=_bearer(token_b)) as match_b,
     ):
         await match_a.send_json({"type": "join", "filters": FILTERS})
         waiting_a = await match_a.receive_json()

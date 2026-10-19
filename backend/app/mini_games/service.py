@@ -65,6 +65,10 @@ async def _load_bank(db: AsyncSession, game_type: GameType) -> list[GamePromptRo
     return list(result.scalars().all())
 
 
+async def has_prompts(db: AsyncSession, game_type: GameType) -> bool:
+    return bool(await _load_bank(db, game_type))
+
+
 async def pick_next_prompt(db: AsyncSession, session: GameSession) -> GamePrompt | None:
     """Picks a random not-yet-shown prompt for the session's game type.
     Returns None once the bank is exhausted for this call (caller decides

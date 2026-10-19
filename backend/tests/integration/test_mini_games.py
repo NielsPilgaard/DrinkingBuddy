@@ -10,6 +10,10 @@ from app.signaling.session import call_id_for_pair
 pytestmark = pytest.mark.integration
 
 
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, uuid.UUID]:
     sent: list[str] = []
     monkeypatch.setattr(
@@ -17,7 +21,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, u
     )
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], uuid.UUID(body["user_id"])
 
@@ -30,10 +34,14 @@ async def test_game_invite_accept_reveals_synced_prompt(ws_client, monkeypatch, 
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "wyr-b@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined
@@ -79,10 +87,14 @@ async def test_game_decline_notifies_requester(ws_client, monkeypatch, db_sessio
     )
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()
             await ws_b.receive_json()
             await ws_a.receive_json()
@@ -109,10 +121,14 @@ async def test_requester_cannot_accept_own_game_invite(ws_client, monkeypatch, d
     )
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()
             await ws_b.receive_json()
             await ws_a.receive_json()
@@ -147,10 +163,14 @@ async def test_requester_cannot_decline_own_game_invite(ws_client, monkeypatch, 
     )
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()
             await ws_b.receive_json()
             await ws_a.receive_json()
@@ -191,10 +211,14 @@ async def test_trivia_correct_option_withheld_until_reveal(ws_client, monkeypatc
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "trivia-b@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()
             await ws_b.receive_json()
             await ws_a.receive_json()
@@ -215,3 +239,32 @@ async def test_trivia_correct_option_withheld_until_reveal(ws_client, monkeypatc
             assert revealed_b["type"] == "game_revealed"
             assert revealed_a["correct_option"] == "4"
             assert revealed_b["correct_option"] == "4"
+
+
+@pytest.mark.asyncio
+async def test_accept_with_empty_bank_closes_game_for_both(ws_client, monkeypatch):
+    # No trivia rows seeded: accepting must end the game, not leave the inviter waiting.
+    token_a, user_a_id = await _signup_and_get_token(ws_client, monkeypatch, "empty-a@example.com")
+    token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "empty-b@example.com")
+    call_id = call_id_for_pair(user_a_id, user_b_id)
+
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
+        await ws_a.receive_json()  # turn creds
+
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
+            await ws_b.receive_json()  # turn creds
+            await ws_b.receive_json()  # peer_joined
+            await ws_a.receive_json()  # peer_joined
+
+            await ws_a.send_json({"type": "game_start", "game_type": "trivia"})
+            assert (await ws_b.receive_json())["type"] == "game_invite"
+
+            await ws_b.send_json({"type": "game_accept"})
+            assert (await ws_b.receive_json())["type"] == "game_closed"
+            assert (await ws_a.receive_json())["type"] == "game_closed"
+
+    assert get_session(call_id) is None

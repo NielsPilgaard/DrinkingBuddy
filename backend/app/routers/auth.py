@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.schemas import RequestLinkBody, RequestLinkResponse, VerifyResponse
+from app.auth.schemas import RequestLinkBody, RequestLinkResponse, VerifyBody, VerifyResponse
 from app.auth.service import (
     AccountSuspendedError,
     InvalidOrExpiredTokenError,
@@ -34,10 +34,12 @@ async def request_link_endpoint(
     return RequestLinkResponse()
 
 
-@router.get("/verify", response_model=VerifyResponse)
-async def verify_endpoint(token: str, db: AsyncSession = _db_dependency) -> VerifyResponse:
+# POST with the token in the body, not GET with a query param: URLs end up in
+# access logs and trace spans, and the token signs the user in.
+@router.post("/verify", response_model=VerifyResponse)
+async def verify_endpoint(body: VerifyBody, db: AsyncSession = _db_dependency) -> VerifyResponse:
     try:
-        session_token, user = await verify_token(db, token)
+        session_token, user = await verify_token(db, body.token)
     except InvalidOrExpiredTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  type MediaStream,
+  MediaStream,
+  type MediaStreamTrack,
   mediaDevices,
   RTCIceCandidate,
   RTCPeerConnection,
+  type RTCRtpTransceiver,
   RTCSessionDescription,
 } from 'react-native-webrtc';
 import { ICE_BREAKERS } from '../content/iceBreakers';
@@ -17,6 +19,35 @@ import {
 } from './signaling';
 
 export type CallStatus = 'connecting' | 'waiting_for_peer' | 'in_call' | 'ended' | 'failed';
+
+/** Whether peer-to-peer media (audio/video) is flowing; chat works regardless. */
+export type MediaState = 'connecting' | 'connected' | 'failed';
+
+type TrackKind = 'audio' | 'video';
+
+/** Why turning the mic/camera on didn't happen, so the UI can say what to do. */
+export type ToggleResult = 'ok' | 'not_eligible' | 'blocked' | 'not_ready';
+
+// The partner never reaching the signaling socket (app killed, crashed after
+// the match) would otherwise leave this side on "Connecting…" forever.
+const PEER_JOIN_TIMEOUT_MS = 20000;
+
+// react-native-webrtc only emits a remote video track's first mute/unmute
+// after ~3s of watching for frames, so its initial `muted` can't be trusted.
+const REMOTE_VIDEO_SETTLE_MS = 3500;
+
+async function getTrack(kind: TrackKind): Promise<MediaStreamTrack | null> {
+  try {
+    const stream = await mediaDevices.getUserMedia({
+      audio: kind === 'audio',
+      video: kind === 'video',
+    });
+    return stream.getTracks()[0] ?? null;
+  } catch {
+    // Permission denied or no device: that medium stays off, the call goes on.
+    return null;
+  }
+}
 
 export type ChatEntry = {
   id: string;
@@ -44,7 +75,8 @@ type UseCallOptions = {
 
 /**
  * Wires signaling + RTCPeerConnection together for a single call. Audio
- * starts enabled; video starts disabled and can only be turned on after a
+ * starts enabled if the mic is available (it's optional, like video); video
+ * starts disabled and can only be turned on after a
  * fresh server-side eligibility check (tasks/10-age-verification.md) both
  * at call start and on every toggle attempt - text chat always flows over
  * the signaling websocket, never a P2P datachannel, so the server can see
@@ -60,6 +92,8 @@ export function useCall({
   const [status, setStatus] = useState<CallStatus>('connecting');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [remoteVideoActive, setRemoteVideoActive] = useState(false);
+  const [mediaState, setMediaState] = useState<MediaState>('connecting');
   const [videoEnabled, setVideoEnabled] = useState(false);
   const [videoEligible, setVideoEligible] = useState(initialVideoEligible);
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -79,6 +113,10 @@ export function useCall({
   const pendingCandidatesRef = useRef<RTCIceCandidate[]>([]);
   const remoteDescriptionSetRef = useRef(false);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  // One sendrecv transceiver per kind, negotiated up front so turning the mic or
+  // camera on later is a replaceTrack (no renegotiation, so no offer glare).
+  const transceiversRef = useRef<Partial<Record<TrackKind, RTCRtpTransceiver>>>({});
   const videoStatusRequestRef = useRef<{
     resolve: (eligible: boolean) => void;
     reject: (err: Error) => void;
@@ -178,52 +216,60 @@ export function useCall({
     });
   }, [settleVideoStatusRequest]);
 
-  /** Returns the fresh eligibility result so callers can react immediately,
-   * without depending on state that may not have re-rendered yet. */
-  const toggleVideo = useCallback(async (): Promise<boolean> => {
+  /** Returns the outcome (fresh eligibility, camera permission) so callers can
+   * react immediately, without depending on state that may not have re-rendered yet. */
+  const toggleVideo = useCallback(async (): Promise<ToggleResult> => {
+    const stream = localStreamRef.current;
+    const sender = transceiversRef.current.video?.sender;
     if (videoEnabled) {
+      // Stop the camera, not just disable the track: the partner's side sees
+      // the track go quiet, and the camera indicator turns off.
       setVideoEnabled(false);
-      localStream?.getVideoTracks().forEach((track) => {
-        track.enabled = false;
+      await sender?.replaceTrack(null);
+      stream?.getVideoTracks().forEach((track) => {
+        track.stop();
+        stream.removeTrack(track);
       });
-      return true;
+      return 'ok';
     }
 
     let eligible: boolean;
     try {
       eligible = await requestFreshVideoEligibility();
     } catch {
-      return false;
+      return 'not_eligible';
     }
     setVideoEligible(eligible);
-    if (!eligible) return false;
+    if (!eligible) return 'not_eligible';
+    // Media not negotiated yet (tapped right as the call connects).
+    if (!stream || !sender) return 'not_ready';
 
-    const stream = localStreamRef.current;
-    if (!stream) return false;
-    if (stream.getVideoTracks().length === 0) {
-      const videoStream = await mediaDevices.getUserMedia({ audio: false, video: true });
-      const [videoTrack] = videoStream.getVideoTracks();
-      if (videoTrack) {
-        stream.addTrack(videoTrack);
-        peerConnectionRef.current?.addTrack(videoTrack, stream);
-      }
-    }
-    stream.getVideoTracks().forEach((track) => {
-      track.enabled = true;
-    });
+    const videoTrack = await getTrack('video');
+    if (!videoTrack) return 'blocked';
+    await sender.replaceTrack(videoTrack);
+    stream.addTrack(videoTrack);
     setVideoEnabled(true);
-    return true;
-  }, [videoEnabled, localStream, requestFreshVideoEligibility]);
+    return 'ok';
+  }, [videoEnabled, requestFreshVideoEligibility]);
 
-  const toggleAudio = useCallback(() => {
-    setAudioEnabled((enabled) => {
-      const next = !enabled;
-      localStream?.getAudioTracks().forEach((track) => {
-        track.enabled = next;
-      });
-      return next;
-    });
-  }, [localStream]);
+  const toggleAudio = useCallback(async (): Promise<ToggleResult> => {
+    const stream = localStreamRef.current;
+    const [existing] = stream?.getAudioTracks() ?? [];
+    if (existing) {
+      existing.enabled = !existing.enabled;
+      setAudioEnabled(existing.enabled);
+      return 'ok';
+    }
+    // No mic yet (denied at call start): ask again.
+    const sender = transceiversRef.current.audio?.sender;
+    if (!stream || !sender) return 'not_ready';
+    const audioTrack = await getTrack('audio');
+    if (!audioTrack) return 'blocked';
+    await sender.replaceTrack(audioTrack);
+    stream.addTrack(audioTrack);
+    setAudioEnabled(true);
+    return 'ok';
+  }, []);
 
   const endCall = useCallback(() => {
     settleVideoStatusRequest(null, new Error('call ended'));
@@ -236,7 +282,10 @@ export function useCall({
     });
     localStreamRef.current = null;
     setLocalStream(null);
+    remoteStreamRef.current = null;
+    transceiversRef.current = {};
     setRemoteStream(null);
+    setRemoteVideoActive(false);
     setGameInvite(null);
     setActiveGame(null);
     setStatus('ended');
@@ -246,12 +295,16 @@ export function useCall({
     let cancelled = false;
     let stream: MediaStream | null = null;
     let signaling: SignalingClient | null = null;
+    let peerJoinTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function setup() {
       try {
         // Audio-only initial capture - video is never requested from the OS
-        // until toggleVideo clears a fresh server-side eligibility check.
-        stream = await mediaDevices.getUserMedia({ audio: true, video: false });
+        // until toggleVideo clears a fresh server-side eligibility check. No
+        // mic (denied) still joins the call: chat, and hearing the partner.
+        const audioTrack = await getTrack('audio');
+        stream = new MediaStream(audioTrack ? [audioTrack] : undefined);
+        if (!audioTrack) setAudioEnabled(false);
         if (cancelled) {
           stream.getTracks().forEach((track) => {
             track.stop();
@@ -261,7 +314,7 @@ export function useCall({
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        signaling = new SignalingClient(signalingWsUrl(apiBaseUrl, sessionToken, callId));
+        signaling = new SignalingClient(signalingWsUrl(apiBaseUrl, callId), sessionToken);
         signalingRef.current = signaling;
         await signaling.waitUntilOpen();
         if (cancelled) return;
@@ -292,12 +345,40 @@ export function useCall({
         const pc = new RTCPeerConnection({ iceServers });
         peerConnectionRef.current = pc;
 
-        activeStream.getTracks().forEach((track) => {
-          pc.addTrack(track, activeStream);
-        });
+        if (isInitiator) {
+          // The answerer adopts these transceivers when it applies the offer.
+          const [audioTrack] = activeStream.getAudioTracks();
+          const init = { direction: 'sendrecv', streams: [activeStream] };
+          transceiversRef.current = {
+            audio: pc.addTransceiver(audioTrack ?? 'audio', init),
+            video: pc.addTransceiver('video', init),
+          };
+        }
 
-        pc.ontrack = (event: { streams: MediaStream[] }) => {
-          setRemoteStream(event.streams[0] ?? null);
+        pc.oniceconnectionstatechange = () => {
+          const state = pc.iceConnectionState;
+          if (state === 'connected' || state === 'completed') setMediaState('connected');
+          else if (state === 'failed') setMediaState('failed');
+        };
+
+        pc.ontrack = (event: { track: MediaStreamTrack | null; streams: MediaStream[] }) => {
+          const { track } = event;
+          if (!track) return;
+          // Tracks on the answerer's adopted transceivers arrive without a
+          // stream, so collect everything into one remote stream.
+          const remote = remoteStreamRef.current ?? event.streams[0] ?? new MediaStream();
+          remoteStreamRef.current = remote;
+          if (!remote.getTracks().some((t) => t.id === track.id)) remote.addTrack(track);
+          setRemoteStream(remote);
+
+          if (track.kind === 'video') {
+            const update = () => setRemoteVideoActive(!track.muted);
+            track.onmute = update;
+            track.onunmute = update;
+            setTimeout(() => {
+              if (remoteStreamRef.current === remote) update();
+            }, REMOTE_VIDEO_SETTLE_MS);
+          }
         };
 
         pc.onicecandidate = (event: { candidate: RTCIceCandidate | null }) => {
@@ -308,6 +389,7 @@ export function useCall({
       };
 
       activeSignaling.onPeerJoined = async () => {
+        if (peerJoinTimer) clearTimeout(peerJoinTimer);
         setStatus('in_call');
         const pc = peerConnectionRef.current;
         if (!pc || !isInitiator) return;
@@ -382,6 +464,20 @@ export function useCall({
             new RTCSessionDescription({ type: 'offer', sdp: message.sdp }),
           );
           remoteDescriptionSetRef.current = true;
+          if (!transceiversRef.current.audio) {
+            // Adopt the initiator's audio/video transceivers as sendrecv, so
+            // this side can send on them later without renegotiating.
+            const adopted: Partial<Record<TrackKind, RTCRtpTransceiver>> = {};
+            for (const transceiver of pc.getTransceivers()) {
+              const kind = transceiver.receiver.track?.kind;
+              if (kind !== 'audio' && kind !== 'video') continue;
+              transceiver.direction = 'sendrecv';
+              adopted[kind] = transceiver;
+            }
+            transceiversRef.current = adopted;
+            const [audioTrack] = activeStream.getAudioTracks();
+            if (audioTrack) await adopted.audio?.sender.replaceTrack(audioTrack);
+          }
           for (const candidate of pendingCandidatesRef.current.splice(0)) {
             await pc.addIceCandidate(candidate);
           }
@@ -417,12 +513,19 @@ export function useCall({
       };
 
       setStatus('waiting_for_peer');
+      peerJoinTimer = setTimeout(() => {
+        if (signalingRef.current === activeSignaling) {
+          endCall();
+          setStatus('failed');
+        }
+      }, PEER_JOIN_TIMEOUT_MS);
     }
 
     setup();
 
     return () => {
       cancelled = true;
+      if (peerJoinTimer) clearTimeout(peerJoinTimer);
       peerConnectionRef.current?.close();
       peerConnectionRef.current = null;
       signalingRef.current?.close();
@@ -439,6 +542,8 @@ export function useCall({
     error,
     localStream,
     remoteStream,
+    remoteVideoActive,
+    mediaState,
     videoEnabled,
     videoEligible,
     audioEnabled,

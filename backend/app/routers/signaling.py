@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.security import bearer_token
 from app.auth.service import get_user_for_session_token
 from app.chat_safety.service import clear_call_state as clear_chat_safety_state
 from app.chat_safety.service import scan_chat_message
@@ -42,6 +43,7 @@ from app.signaling.schemas import (
 )
 from app.signaling.turn import generate_turn_credentials
 from app.verification.service import is_video_eligible
+from app.ws import reject_websocket
 
 router = APIRouter(tags=["signaling"])
 
@@ -64,7 +66,8 @@ _MESSAGE_TYPES: dict[str, type[InboundMessage | InboundGameMessage]] = {
 
 
 async def _authenticate(websocket: WebSocket, db: AsyncSession) -> uuid.UUID | None:
-    token = websocket.query_params.get("token")
+    # Header, not a query param: URLs end up in access logs and trace spans.
+    token = bearer_token(websocket.headers.get("authorization"))
     if not token:
         return None
 
@@ -83,6 +86,15 @@ def _parse_call_user_ids(call_id: str) -> tuple[uuid.UUID, uuid.UUID] | None:
         return None
 
 
+async def _close_game(websocket: WebSocket, call_id: str, user_id: uuid.UUID) -> None:
+    mini_games_service.close_game(call_id)
+    event = GameClosedEvent().model_dump()
+    await websocket.send_json(event)
+    peer_socket = call_registry.peer_socket(call_id, user_id)
+    if peer_socket is not None:
+        await peer_socket.send_json(event)
+
+
 @router.websocket("/signaling/ws")
 async def signaling_ws(
     websocket: WebSocket,
@@ -90,24 +102,24 @@ async def signaling_ws(
 ) -> None:
     user_id = await _authenticate(websocket, db)
     if user_id is None:
-        await websocket.close(code=4401, reason="Not authenticated")
+        await reject_websocket(websocket, 4401, "Not authenticated")
         return
 
     call_id = websocket.query_params.get("call_id")
     if not call_id:
-        await websocket.close(code=4400, reason="Missing call_id")
+        await reject_websocket(websocket, 4400, "Missing call_id")
         return
 
     call_user_ids = _parse_call_user_ids(call_id)
     if call_user_ids is None or user_id not in call_user_ids:
-        await websocket.close(code=4403, reason="Not a participant in this call")
+        await reject_websocket(websocket, 4403, "Not a participant in this call")
         return
     partner_id = call_user_ids[0] if call_user_ids[1] == user_id else call_user_ids[1]
 
     try:
         previous_socket = call_registry.join(call_id, user_id, websocket)
     except CallFullError:
-        await websocket.close(code=4409, reason="Call already has two participants")
+        await reject_websocket(websocket, 4409, "Call already has two participants")
         return
 
     try:
@@ -191,6 +203,9 @@ async def signaling_ws(
                     continue
                 prompt = await mini_games_service.pick_next_prompt(db, session)
                 if prompt is None:
+                    # Empty bank: end the game rather than leave the inviter
+                    # waiting on an accept that never starts anything.
+                    await _close_game(websocket, call_id, user_id)
                     continue
                 event = GameStartedEvent(
                     game_type=session.game_type, prompt=PublicGamePrompt.from_prompt(prompt)
@@ -217,6 +232,8 @@ async def signaling_ws(
                     continue
                 prompt = await mini_games_service.pick_next_prompt(db, session)
                 if prompt is None:
+                    # Bank exhausted for this call: the game is over.
+                    await _close_game(websocket, call_id, user_id)
                     continue
                 event = GamePromptEvent(prompt=PublicGamePrompt.from_prompt(prompt)).model_dump(
                     mode="json"
@@ -243,12 +260,7 @@ async def signaling_ws(
                 continue
 
             if isinstance(message, GameCloseMessage):
-                mini_games_service.close_game(call_id)
-                event = GameClosedEvent().model_dump()
-                await websocket.send_json(event)
-                peer_socket = call_registry.peer_socket(call_id, user_id)
-                if peer_socket is not None:
-                    await peer_socket.send_json(event)
+                await _close_game(websocket, call_id, user_id)
                 continue
 
             peer_socket = call_registry.peer_socket(call_id, user_id)

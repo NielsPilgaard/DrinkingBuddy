@@ -9,7 +9,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { verifyEndpointAuthVerifyGet } from '../api/generated/sdk.gen';
+import {
+  logoutEndpointAuthLogoutPost,
+  verifyEndpointAuthVerifyPost,
+} from '../api/generated/sdk.gen';
 import {
   clearStoredSessionToken,
   getStoredSessionToken,
@@ -66,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    // Revoke server-side too; best effort, signing out locally must not depend on the network.
+    await logoutEndpointAuthLogoutPost().catch(() => undefined);
     await clearStoredSessionToken();
     setState({ status: 'signed-out' });
   }
@@ -99,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verify = useCallback(async (token: string) => {
     verificationStarted.current = true;
     setState({ status: 'verifying' });
-    const { data, error, response } = await verifyEndpointAuthVerifyGet({ query: { token } });
+    const { data, error, response } = await verifyEndpointAuthVerifyPost({ body: { token } });
     if (error || !data) {
       setState({ status: response?.status === 403 ? 'verify-suspended' : 'verify-failed' });
       return;

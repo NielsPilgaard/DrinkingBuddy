@@ -16,6 +16,10 @@ from app.signaling.session import call_id_for_pair
 pytestmark = pytest.mark.integration
 
 
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
 async def _make_user(db_session, email: str) -> uuid.UUID:
     user = User(email=email, birthdate=datetime(2000, 1, 1, tzinfo=UTC).date())
     db_session.add(user)
@@ -31,7 +35,7 @@ async def _signup_and_get_token(client, monkeypatch, email: str) -> tuple[str, u
     )
     await client.post("/auth/request-link", json={"email": email, "birthdate": "2000-01-01"})
     token = parse_qs(urlparse(sent[-1]).query)["token"][0]
-    verify_response = await client.get("/auth/verify", params={"token": token})
+    verify_response = await client.post("/auth/verify", json={"token": token})
     body = verify_response.json()
     return body["session_token"], uuid.UUID(body["user_id"])
 
@@ -175,10 +179,14 @@ async def test_flagged_chat_message_still_relays_to_peer_and_stays_silent(ws_cli
     token_b, user_b_id = await _signup_and_get_token(ws_client, monkeypatch, "flag-b@example.com")
     call_id = call_id_for_pair(user_a_id, user_b_id)
 
-    async with ws_client.websocket(f"/signaling/ws?token={token_a}&call_id={call_id}") as ws_a:
+    async with ws_client.websocket(
+        f"/signaling/ws?call_id={call_id}", headers=_bearer(token_a)
+    ) as ws_a:
         await ws_a.receive_json()  # turn creds
 
-        async with ws_client.websocket(f"/signaling/ws?token={token_b}&call_id={call_id}") as ws_b:
+        async with ws_client.websocket(
+            f"/signaling/ws?call_id={call_id}", headers=_bearer(token_b)
+        ) as ws_b:
             await ws_b.receive_json()  # turn creds
             await ws_b.receive_json()  # peer_joined
             await ws_a.receive_json()  # peer_joined

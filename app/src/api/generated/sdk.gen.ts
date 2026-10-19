@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BlockEndpointBlockPostData, BlockEndpointBlockPostErrors, BlockEndpointBlockPostResponses, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponses, HealthHealthGetData, HealthHealthGetResponses, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponses, ReportEndpointReportPostData, ReportEndpointReportPostErrors, ReportEndpointReportPostResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostErrors, StartVerificationEndpointVerifyStartPostResponses, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponses, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetErrors, VerifyEndpointAuthVerifyGetResponses } from './types.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostErrors, BlockEndpointBlockPostResponses, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, HealthHealthGetData, HealthHealthGetResponses, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetErrors, ListFlagsEndpointModerationChatSafetyFlagsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ListPatternsEndpointModerationChatSafetyPatternsGetResponses, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponses, ReportEndpointReportPostData, ReportEndpointReportPostErrors, ReportEndpointReportPostResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostErrors, StartVerificationEndpointVerifyStartPostResponses, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutErrors, UpsertPatternEndpointModerationChatSafetyPatternsPutResponses, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponses, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostErrors, VerifyEndpointAuthVerifyPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -38,7 +38,14 @@ export const requestLinkEndpointAuthRequestLinkPost = <ThrowOnError extends bool
 /**
  * Verify Endpoint
  */
-export const verifyEndpointAuthVerifyGet = <ThrowOnError extends boolean = false>(options: Options<VerifyEndpointAuthVerifyGetData, ThrowOnError>): RequestResult<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError> => (options.client ?? client).get<VerifyEndpointAuthVerifyGetResponses, VerifyEndpointAuthVerifyGetErrors, ThrowOnError>({ url: '/auth/verify', ...options });
+export const verifyEndpointAuthVerifyPost = <ThrowOnError extends boolean = false>(options: Options<VerifyEndpointAuthVerifyPostData, ThrowOnError>): RequestResult<VerifyEndpointAuthVerifyPostResponses, VerifyEndpointAuthVerifyPostErrors, ThrowOnError> => (options.client ?? client).post<VerifyEndpointAuthVerifyPostResponses, VerifyEndpointAuthVerifyPostErrors, ThrowOnError>({
+    url: '/auth/verify',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Logout Endpoint
@@ -74,6 +81,38 @@ export const blockEndpointBlockPost = <ThrowOnError extends boolean = false>(opt
         ...options.headers
     }
 });
+
+/**
+ * List Flags Endpoint
+ */
+export const listFlagsEndpointModerationChatSafetyFlagsGet = <ThrowOnError extends boolean = false>(options?: Options<ListFlagsEndpointModerationChatSafetyFlagsGetData, ThrowOnError>): RequestResult<ListFlagsEndpointModerationChatSafetyFlagsGetResponses, ListFlagsEndpointModerationChatSafetyFlagsGetErrors, ThrowOnError> => (options?.client ?? client).get<ListFlagsEndpointModerationChatSafetyFlagsGetResponses, ListFlagsEndpointModerationChatSafetyFlagsGetErrors, ThrowOnError>({ url: '/moderation/chat-safety/flags', ...options });
+
+/**
+ * Get Flag Endpoint
+ */
+export const getFlagEndpointModerationChatSafetyFlagsFlagIdGet = <ThrowOnError extends boolean = false>(options: Options<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, ThrowOnError>): RequestResult<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, ThrowOnError> => (options.client ?? client).get<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, ThrowOnError>({ url: '/moderation/chat-safety/flags/{flag_id}', ...options });
+
+/**
+ * List Patterns Endpoint
+ */
+export const listPatternsEndpointModerationChatSafetyPatternsGet = <ThrowOnError extends boolean = false>(options?: Options<ListPatternsEndpointModerationChatSafetyPatternsGetData, ThrowOnError>): RequestResult<ListPatternsEndpointModerationChatSafetyPatternsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ThrowOnError> => (options?.client ?? client).get<ListPatternsEndpointModerationChatSafetyPatternsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ThrowOnError>({ url: '/moderation/chat-safety/patterns', ...options });
+
+/**
+ * Upsert Pattern Endpoint
+ */
+export const upsertPatternEndpointModerationChatSafetyPatternsPut = <ThrowOnError extends boolean = false>(options: Options<UpsertPatternEndpointModerationChatSafetyPatternsPutData, ThrowOnError>): RequestResult<UpsertPatternEndpointModerationChatSafetyPatternsPutResponses, UpsertPatternEndpointModerationChatSafetyPatternsPutErrors, ThrowOnError> => (options.client ?? client).put<UpsertPatternEndpointModerationChatSafetyPatternsPutResponses, UpsertPatternEndpointModerationChatSafetyPatternsPutErrors, ThrowOnError>({
+    url: '/moderation/chat-safety/patterns',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Rollback Pattern Endpoint
+ */
+export const rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost = <ThrowOnError extends boolean = false>(options: Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, ThrowOnError>): RequestResult<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, ThrowOnError> => (options.client ?? client).post<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, ThrowOnError>({ url: '/moderation/chat-safety/patterns/{slug}/rollback/{version}', ...options });
 
 /**
  * Start Verification Endpoint

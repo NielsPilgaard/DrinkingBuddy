@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { blockEndpointBlockPost, diditWebhookEndpointVerifyWebhookPost, healthHealthGet, logoutEndpointAuthLogoutPost, type Options, reportEndpointReportPost, requestLinkEndpointAuthRequestLinkPost, startVerificationEndpointVerifyStartPost, verificationStatusEndpointVerifyStatusGet, verifyEndpointAuthVerifyGet } from '../sdk.gen';
-import type { BlockEndpointBlockPostData, BlockEndpointBlockPostError, BlockEndpointBlockPostResponse, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponse, HealthHealthGetData, HealthHealthGetResponse, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponse, ReportEndpointReportPostData, ReportEndpointReportPostError, ReportEndpointReportPostResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostError, StartVerificationEndpointVerifyStartPostResponse, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponse, VerifyEndpointAuthVerifyGetData, VerifyEndpointAuthVerifyGetError, VerifyEndpointAuthVerifyGetResponse } from '../types.gen';
+import { blockEndpointBlockPost, diditWebhookEndpointVerifyWebhookPost, getFlagEndpointModerationChatSafetyFlagsFlagIdGet, healthHealthGet, listFlagsEndpointModerationChatSafetyFlagsGet, listPatternsEndpointModerationChatSafetyPatternsGet, logoutEndpointAuthLogoutPost, type Options, reportEndpointReportPost, requestLinkEndpointAuthRequestLinkPost, rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost, startVerificationEndpointVerifyStartPost, upsertPatternEndpointModerationChatSafetyPatternsPut, verificationStatusEndpointVerifyStatusGet, verifyEndpointAuthVerifyPost } from '../sdk.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostError, BlockEndpointBlockPostResponse, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponse, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetError, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetError, ListFlagsEndpointModerationChatSafetyFlagsGetResponse, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetError, ListPatternsEndpointModerationChatSafetyPatternsGetResponse, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponse, ReportEndpointReportPostData, ReportEndpointReportPostError, ReportEndpointReportPostResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostError, StartVerificationEndpointVerifyStartPostResponse, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutError, UpsertPatternEndpointModerationChatSafetyPatternsPutResponse, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponse, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostError, VerifyEndpointAuthVerifyPostResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -74,23 +74,22 @@ export const requestLinkEndpointAuthRequestLinkPostMutation = (options?: Partial
     return mutationOptions;
 };
 
-export const verifyEndpointAuthVerifyGetQueryKey = (options: Options<VerifyEndpointAuthVerifyGetData>) => createQueryKey('verifyEndpointAuthVerifyGet', options);
-
 /**
  * Verify Endpoint
  */
-export const verifyEndpointAuthVerifyGetOptions = (options: Options<VerifyEndpointAuthVerifyGetData>) => queryOptions<VerifyEndpointAuthVerifyGetResponse, VerifyEndpointAuthVerifyGetError, VerifyEndpointAuthVerifyGetResponse, ReturnType<typeof verifyEndpointAuthVerifyGetQueryKey>>({
-    queryFn: async ({ queryKey, signal }) => {
-        const { data } = await verifyEndpointAuthVerifyGet({
-            ...options,
-            ...queryKey[0],
-            signal,
-            throwOnError: true
-        });
-        return data;
-    },
-    queryKey: verifyEndpointAuthVerifyGetQueryKey(options)
-});
+export const verifyEndpointAuthVerifyPostMutation = (options?: Partial<Options<VerifyEndpointAuthVerifyPostData>>): UseMutationOptions<VerifyEndpointAuthVerifyPostResponse, VerifyEndpointAuthVerifyPostError, Options<VerifyEndpointAuthVerifyPostData>> => {
+    const mutationOptions: UseMutationOptions<VerifyEndpointAuthVerifyPostResponse, VerifyEndpointAuthVerifyPostError, Options<VerifyEndpointAuthVerifyPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await verifyEndpointAuthVerifyPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 /**
  * Logout Endpoint
@@ -133,6 +132,94 @@ export const blockEndpointBlockPostMutation = (options?: Partial<Options<BlockEn
     const mutationOptions: UseMutationOptions<BlockEndpointBlockPostResponse, BlockEndpointBlockPostError, Options<BlockEndpointBlockPostData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await blockEndpointBlockPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listFlagsEndpointModerationChatSafetyFlagsGetQueryKey = (options?: Options<ListFlagsEndpointModerationChatSafetyFlagsGetData>) => createQueryKey('listFlagsEndpointModerationChatSafetyFlagsGet', options);
+
+/**
+ * List Flags Endpoint
+ */
+export const listFlagsEndpointModerationChatSafetyFlagsGetOptions = (options?: Options<ListFlagsEndpointModerationChatSafetyFlagsGetData>) => queryOptions<ListFlagsEndpointModerationChatSafetyFlagsGetResponse, ListFlagsEndpointModerationChatSafetyFlagsGetError, ListFlagsEndpointModerationChatSafetyFlagsGetResponse, ReturnType<typeof listFlagsEndpointModerationChatSafetyFlagsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listFlagsEndpointModerationChatSafetyFlagsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listFlagsEndpointModerationChatSafetyFlagsGetQueryKey(options)
+});
+
+export const getFlagEndpointModerationChatSafetyFlagsFlagIdGetQueryKey = (options: Options<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData>) => createQueryKey('getFlagEndpointModerationChatSafetyFlagsFlagIdGet', options);
+
+/**
+ * Get Flag Endpoint
+ */
+export const getFlagEndpointModerationChatSafetyFlagsFlagIdGetOptions = (options: Options<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData>) => queryOptions<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetError, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse, ReturnType<typeof getFlagEndpointModerationChatSafetyFlagsFlagIdGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getFlagEndpointModerationChatSafetyFlagsFlagIdGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getFlagEndpointModerationChatSafetyFlagsFlagIdGetQueryKey(options)
+});
+
+export const listPatternsEndpointModerationChatSafetyPatternsGetQueryKey = (options?: Options<ListPatternsEndpointModerationChatSafetyPatternsGetData>) => createQueryKey('listPatternsEndpointModerationChatSafetyPatternsGet', options);
+
+/**
+ * List Patterns Endpoint
+ */
+export const listPatternsEndpointModerationChatSafetyPatternsGetOptions = (options?: Options<ListPatternsEndpointModerationChatSafetyPatternsGetData>) => queryOptions<ListPatternsEndpointModerationChatSafetyPatternsGetResponse, ListPatternsEndpointModerationChatSafetyPatternsGetError, ListPatternsEndpointModerationChatSafetyPatternsGetResponse, ReturnType<typeof listPatternsEndpointModerationChatSafetyPatternsGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listPatternsEndpointModerationChatSafetyPatternsGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listPatternsEndpointModerationChatSafetyPatternsGetQueryKey(options)
+});
+
+/**
+ * Upsert Pattern Endpoint
+ */
+export const upsertPatternEndpointModerationChatSafetyPatternsPutMutation = (options?: Partial<Options<UpsertPatternEndpointModerationChatSafetyPatternsPutData>>): UseMutationOptions<UpsertPatternEndpointModerationChatSafetyPatternsPutResponse, UpsertPatternEndpointModerationChatSafetyPatternsPutError, Options<UpsertPatternEndpointModerationChatSafetyPatternsPutData>> => {
+    const mutationOptions: UseMutationOptions<UpsertPatternEndpointModerationChatSafetyPatternsPutResponse, UpsertPatternEndpointModerationChatSafetyPatternsPutError, Options<UpsertPatternEndpointModerationChatSafetyPatternsPutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await upsertPatternEndpointModerationChatSafetyPatternsPut({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Rollback Pattern Endpoint
+ */
+export const rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostMutation = (options?: Partial<Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData>>): UseMutationOptions<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData>> => {
+    const mutationOptions: UseMutationOptions<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

@@ -4,6 +4,7 @@ import { configureApiClient } from './src/api/setup';
 import { AuthProvider, useAuth } from './src/auth/context';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { MatchScreen } from './src/screens/MatchScreen';
+import { colors } from './src/theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
 configureApiClient(API_URL);
@@ -16,7 +17,7 @@ function Root() {
   if (auth.status === 'loading' || auth.status === 'verifying') {
     return (
       <View style={styles.container}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.textMuted} />
       </View>
     );
   }
@@ -69,28 +70,29 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   error: {
-    color: 'red',
+    color: colors.danger,
     textAlign: 'center',
     paddingHorizontal: 24,
   },
   title: {
+    color: colors.text,
     fontSize: 20,
     fontWeight: 'bold',
   },
   button: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.onPrimary,
     fontWeight: '600',
   },
 });
