@@ -1,7 +1,7 @@
 # Override for running the backend against Maestro E2E flows (maestro/).
 # Sets ENVIRONMENT=development so POST /auth/request-link echoes the
 # magic-link token (guarded by the X-Test-Mode header too - see
-# app/routers/auth.py and tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md).
+# app/routers/auth.py).
 #
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.e2e.yml up

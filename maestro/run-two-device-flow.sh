@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Runs a two-device Maestro flow (match-and-call.yaml or report-block.yaml)
 # on two Android emulators/devices in parallel. See
-# run-two-device-flow.ps1 docstring and
-# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 6 - UNVERIFIED against a live
-# Maestro run.
+# run-two-device-flow.ps1 docstring. UNVERIFIED against a live Maestro run.
 #
 # Usage: ./run-two-device-flow.sh <flow-file> <device-a-serial> <device-b-serial> [api-base-url]
 # Example: ./run-two-device-flow.sh match-and-call.yaml emulator-5554 emulator-5556

@@ -64,8 +64,7 @@ class Settings(BaseSettings):
     # magic-link token back in the response (if the caller also sends
     # X-Test-Mode: 1), so E2E clients (Maestro) can complete sign-in without
     # an email inbox. Never enabled outside "development" - see
-    # tasks/completed/mobile-e2e-maestro.md and
-    # tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+    # tasks/completed/mobile-e2e-maestro.md.
 
 
 settings = Settings()

@@ -7,8 +7,7 @@ two Android emulators/devices in parallel.
 Maestro CLI (non-Cloud) drives one device per invocation - see the comment
 header in match-and-call.yaml. This script launches two `maestro test`
 processes against two device serials, each with a different DEVICE_ROLE
-(a/b), and waits for both to finish. UNVERIFIED against a live Maestro run -
-see tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 6.
+(a/b), and waits for both to finish. UNVERIFIED against a live Maestro run.
 
 .PARAMETER FlowFile
 Path to the flow YAML (e.g. match-and-call.yaml or report-block.yaml).
@@ -53,8 +52,7 @@ Receive-Job $jobB
 # `exit $LASTEXITCODE` above causes PowerShell to treat it as a script
 # failure. This has NOT been verified against a real Maestro binary - if
 # both devices report success here even on an assertion failure, check
-# $LASTEXITCODE handling first. See
-# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 6.
+# $LASTEXITCODE handling first.
 $failed = ($jobA.State -eq "Failed") -or ($jobB.State -eq "Failed")
 Remove-Job $jobA, $jobB
 

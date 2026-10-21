@@ -1,6 +1,6 @@
 # AGENTS.md — DrinkingBuddy (working name)
 
-Chat-roulette-style app, random 1:1 pairing for virtual hangout over a drink. iOS + Android MVP, browser later.
+Chat-roulette-style app, random 1:1 pairing for virtual hangout over a drink. Android-first MVP, iOS next (same codebase), browser later.
 
 ## Setup (fresh clone)
 

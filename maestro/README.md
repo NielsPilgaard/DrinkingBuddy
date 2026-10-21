@@ -4,11 +4,7 @@ description: Maestro E2E flows driving the real Expo app UI against a running ba
 
 # Maestro E2E
 
-See `tasks/completed/mobile-e2e-maestro.md` for scope/rationale and
-`tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md` for open questions/unverified
-assumptions an implementer flagged — **read that file before trusting these
-flows in CI**, several pieces (Maestro CLI multi-device behavior, the exact
-`appId`) were written from docs, not a live run.
+See `tasks/completed/mobile-e2e-maestro.md` for scope/rationale.
 
 ## Prerequisites
 
@@ -41,10 +37,9 @@ Single-device flow:
 maestro test maestro/signup-login.yaml -e API_BASE_URL=http://10.0.2.2:8000
 ```
 
-Two-device flows need the wrapper script (see caveat in
-`tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md` item 6 — Maestro CLI, as opposed to
+Two-device flows need the wrapper script. Maestro CLI, as opposed to
 Maestro Cloud, drives one device per invocation, so the wrapper just runs two
-`maestro test` processes in parallel against two device serials):
+`maestro test` processes in parallel against two device serials:
 
 ```powershell
 ./maestro/run-two-device-flow.ps1 -FlowFile match-and-call.yaml -DeviceA emulator-5554 -DeviceB emulator-5556

@@ -27,8 +27,7 @@ async def request_link_endpoint(
 ) -> RequestLinkResponse:
     raw_token = await request_link(db, body.email, body.birthdate)
     # Double-gated (environment + header) so a misconfigured deployment can't
-    # leak sign-in tokens just by one of the two being wrong - see
-    # tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+    # leak sign-in tokens just by one of the two being wrong.
     if settings.environment == "development" and x_test_mode == "1" and raw_token is not None:
         return RequestLinkResponse(debug_token=raw_token)
     return RequestLinkResponse()

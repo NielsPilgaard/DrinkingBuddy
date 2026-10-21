@@ -8,8 +8,7 @@
 # back to MatchScreen. This flow asserts CallEndedScreen (what the code
 # actually does) rather than MatchScreen (what the spec says) - please
 # confirm which is intended; if MatchScreen really is the desired end state,
-# CallEndedScreen may need to be cut or auto-continue. Flagged in
-# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md.
+# CallEndedScreen may need to be cut or auto-continue.
 #
 # Same two-device caveat as match-and-call.yaml applies - needs a peer
 # device in the queue to actually get matched into a call. Run via

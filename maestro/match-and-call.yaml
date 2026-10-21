@@ -7,9 +7,8 @@
 # file is written to be run via `run-two-device-flow.ps1` / `.sh`, which
 # launches this same flow twice in parallel against two devices/emulators,
 # with DEVICE_ROLE selecting which side of the exchange each instance plays.
-# UNVERIFIED against a live Maestro run - see
-# tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 6, please confirm before
-# relying on this.
+# UNVERIFIED against a live Maestro run, please confirm before relying on
+# this.
 #
 # appId inherited from maestro/config.yaml (workspace-level default).
 ---

@@ -1,10 +1,9 @@
 # Journey: request magic link -> capture token via test-mode echo -> open
 # deep link -> land on MatchScreen.
 #
-# Requires the backend running with ENVIRONMENT=test (see
+# Requires the backend running with ENVIRONMENT=development (see
 # backend/docker-compose.e2e.yml) - the X-Test-Mode header alone is not
-# enough, see app/routers/auth.py. UNVERIFIED against a live Maestro run,
-# see tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md item 5.
+# enough, see app/routers/auth.py. UNVERIFIED against a live Maestro run.
 #
 # appId inherited from maestro/config.yaml (workspace-level default).
 ---

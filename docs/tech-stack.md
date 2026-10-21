@@ -1,20 +1,20 @@
 ---
 title: Tech Stack — DrinkingBuddy (working name)
 status: draft
-last_updated: 2026-07-10
+last_updated: 2026-10-21
 owners: Niels (eng)
 ---
 
 ## TL;DR
 
-Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single OVHcloud VPS via Docker Compose. React Native (Expo) for iOS + Android MVP. Auth is OTP/magic-link only, no password (PRD §7). Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
+Python (FastAPI) backend for API + WebRTC signaling, self-hosted coturn for TURN/STUN, Postgres + Redis, all on a single OVHcloud VPS via Docker Compose. React Native (Expo) for the Android-first MVP, iOS next from the same codebase. Auth is OTP/magic-link only, no password (PRD §7). Browser client deferred but cheap to add later — plain React web app reusing the same backend, WebRTC is native to browsers.
 
 ---
 
 ## 1. Mobile app — React Native (Expo)
 
 - **React Native**, not Flutter. Chosen over Flutter for WebRTC library maturity (`react-native-webrtc` has longer track record on codec/background-camera edge cases) and larger community for troubleshooting.
-- **Expo** + EAS Build: enables iOS builds/TestFlight submission without owning Mac hardware, and Play Store internal track from the same pipeline. Matches PRD §2 requirement (Christian gets both tracks day one).
+- **Expo** + EAS Build: enables iOS builds/TestFlight submission without owning Mac hardware, and Play Store internal track from the same pipeline. Matches PRD §2 (Play Store internal track from day one, TestFlight once iOS builds start).
 - Most app code (UI, navigation, state) doesn't require deep JS expertise — WebRTC is consumed via library calls, not built from scratch.
 
 ## 2. Backend — Python / FastAPI

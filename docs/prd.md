@@ -1,13 +1,13 @@
 ---
 title: PRD — DrinkingBuddy (working name)
 status: draft
-last_updated: 2026-07-23
+last_updated: 2026-10-21
 owners: Niels (eng), Christian (vision/QA/marketing)
 ---
 
 ## TL;DR
 
-Chat-roulette-style app that randomly pairs bored/lonely people for a virtual hangout over a drink. iOS + Android MVP (cross-platform framework), browser later. Core loop: instant random 1:1 video/audio/text match, optional filters (language, drink type, broad location), free skip, free to use. Lightweight accounts (18+, email OTP/magic-link, self-declared birthdate), reactive report/block moderation with auto-suspend circuit breaker, proactive AI nudity detection required before public launch. Fully ephemeral matches — no friending, no history. North star metric: D7 retention.
+Chat-roulette-style app that randomly pairs bored/lonely people for a virtual hangout over a drink. Android-first MVP (cross-platform framework), iOS next, browser later. Core loop: instant random 1:1 video/audio/text match, optional filters (language, drink type, broad location), free skip, free to use. Lightweight accounts (18+, email OTP/magic-link, self-declared birthdate), reactive report/block moderation with auto-suspend circuit breaker, proactive AI nudity detection required before public launch. Fully ephemeral matches — no friending, no history. North star metric: D7 retention.
 
 ---
 
@@ -18,11 +18,11 @@ People get bored/lonely, want casual company and a drink, but going out is impra
 ## 2. Team
 
 - **Niels** — engineering (this repo).
-- **Christian** — vision, QA, marketing. Gets TestFlight (iOS) + Play Store internal testing track access from day one for hands-on build QA.
+- **Christian** — vision, QA, marketing. Gets Play Store internal testing track access from day one for hands-on build QA, and TestFlight (iOS) once iOS builds start.
 
 ## 3. Platform strategy
 
-- **iOS + Android simultaneously**, via cross-platform framework (React Native or Flutter — tech stack decision separate from PRD). No sequential single-platform launch: this is a matching app, splitting the pool by launching one platform first directly hurts match quality/wait time on both.
+- **Android first, iOS next**, from one cross-platform codebase (React Native or Flutter — tech stack decision separate from PRD). The first release ships on Android only; iOS follows from the same code once Android is live. Tradeoff: iPhone users can't join until iOS ships, which shrinks the early pool. Accepted at MVP, same stance as Denmark-only (early pool size is secondary to validating the core loop).
 - **Browser/desktop**: explicitly deferred. Only worth doing early if a single cross-platform tech (app+web+desktop) with full webcam/mic control exists and is excellent — otherwise browser comes after mobile MVP is validated.
 
 ### Launch geography

@@ -7,8 +7,7 @@
 # Two emulators run in one job (reactivecircus/android-emulator-runner
 # invoked twice, on different AVD ports) so match-and-call.yaml and
 # report-block.yaml (both two-device flows) can run in CI, not just
-# signup-login.yaml. Design decided in tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md
-# item 7a.
+# signup-login.yaml.
 #
 # APK comes from EAS Build cloud (profile "e2e" in app/eas.json - internal
 # distribution, Android APK, EXPO_PUBLIC_API_URL baked to
@@ -92,8 +91,7 @@ jobs:
           done
         # UNVERIFIED: two concurrent android-emulator-runner invocations in
         # one job (different avd-name/port per call) has not been exercised
-        # against a live run - see tasks/NEEDS-HUMAN-REVIEW-maestro-e2e.md
-        # item 7a. Confirm both emulators stay up simultaneously (the action
+        # against a live run. Confirm both emulators stay up simultaneously (the action
         # is designed for one emulator per job; running it twice may tear
         # down the first when the second step starts). If it doesn't work,
         # fall back to a manual `emulator` binary invocation for device B
