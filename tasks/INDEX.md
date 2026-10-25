@@ -20,7 +20,7 @@ Keep this file in sync when a task is added, finished (moved to `completed/`), o
 |---|---|---|---|---|
 | 1 | [05 — OVHcloud deploy](05-ovhcloud-deploy.md) | human | 16 → "Deploy" | Repo side done (see task Progress). Left: buy domain + VPS, deploy, run the checks in `docs/deploy.md`. |
 | 2 | [16 — Manual launch steps](16-manual-launch-steps.md) | human | — | Didit account/keys, Apple Developer + EAS, VPS firewall. Unblocks 05 (firewall), 15 (Didit) and iOS testing. |
-| 3 | [11 — CSAM reporting runbook](11-csam-reporting.md) | human (legal) + agent | — | Reporting duty applies to user reports from day one, so needed before the invite pool goes live. Must also precede 07. |
+| 3 | [11 — CSAM reporting runbook](11-csam-reporting.md) | human (legal) | — | Repo side done (backend case flow + [draft runbook](../docs/csam-runbook.md)). Left: counsel review, names, prod secrets, daily sweep. Needed before the invite pool goes live; must precede 07. |
 | 4 | [15 — Age verification live test](15-age-verification-live-test.md) | agent | 16 (Didit keys) | Turns mock-tested Didit into verified. Video stays gated until then; audio/text work without it. |
 
 ### Before public launch (not blocking invite-only MVP)

@@ -116,7 +116,7 @@ JDK 24+ fails the native build at `configureCMakeDebug` with "A restricted metho
 
 ## Roadmap
 
-[tasks/README.md](tasks/README.md) lists the open work in order. In short:
+[tasks/INDEX.md](tasks/INDEX.md) lists the open work in order. In short:
 
 1. Deploy the backend to a VPS ([docs/deploy.md](docs/deploy.md)) and launch invite-only on Android in Denmark.
 2. Set up a CSAM reporting runbook and test live age verification before real users join.
