@@ -15,6 +15,7 @@ export function ReportBlockSheet({ partnerId, callId, onClose, onDone }: ReportB
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const selectedHint = REPORT_REASONS.find((r) => r.value === reason)?.hint;
 
   async function handleReport(alsoBlock: boolean) {
     if (!reason || submitting) return;
@@ -83,6 +84,12 @@ export function ReportBlockSheet({ partnerId, callId, onClose, onDone }: ReportB
               );
             })}
           </View>
+
+          {selectedHint && (
+            <Text testID="report-reason-hint" style={styles.hintText}>
+              {selectedHint}
+            </Text>
+          )}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -193,6 +200,11 @@ const styles = StyleSheet.create({
   reasonText: {
     color: colors.text,
     fontSize: 15,
+  },
+  hintText: {
+    color: colors.text,
+    fontSize: 13,
+    lineHeight: 18,
   },
   errorText: {
     color: colors.danger,

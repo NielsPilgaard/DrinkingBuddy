@@ -15,6 +15,78 @@ export type BlockBody = {
 };
 
 /**
+ * CsamCaseSummary
+ */
+export type CsamCaseSummary = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Reported Id
+     */
+    reported_id: string;
+    /**
+     * Call Session Id
+     */
+    call_session_id: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * External Reference
+     */
+    external_reference: string | null;
+    /**
+     * Legal Hold
+     */
+    legal_hold: boolean;
+    /**
+     * Retain Until
+     */
+    retain_until: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Closed At
+     */
+    closed_at: string | null;
+};
+
+/**
+ * CsamEvidence
+ */
+export type CsamEvidence = {
+    /**
+     * Case Id
+     */
+    case_id: string;
+    /**
+     * Evidence
+     */
+    evidence: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * DismissBody
+ */
+export type DismissBody = {
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
  * FlaggedMessageDetail
  */
 export type FlaggedMessageDetail = {
@@ -97,6 +169,30 @@ export type HttpValidationError = {
 };
 
 /**
+ * LegalHoldBody
+ */
+export type LegalHoldBody = {
+    /**
+     * Active
+     */
+    active: boolean;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * MarkReportedBody
+ */
+export type MarkReportedBody = {
+    /**
+     * External Reference
+     */
+    external_reference: string;
+};
+
+/**
  * PatternRuleBody
  */
 export type PatternRuleBody = {
@@ -167,7 +263,7 @@ export type ReportBody = {
     /**
      * Reason
      */
-    reason: 'nudity' | 'harassment' | 'underage' | 'spam' | 'other';
+    reason: 'nudity' | 'harassment' | 'underage' | 'csam' | 'spam' | 'other';
 };
 
 /**
@@ -515,6 +611,42 @@ export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses = {
 
 export type GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse = GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses[keyof GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses];
 
+export type EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Moderation-Secret
+         */
+        'x-moderation-secret'?: string;
+    };
+    path: {
+        /**
+         * Flag Id
+         */
+        flag_id: string;
+    };
+    query?: never;
+    url: '/moderation/chat-safety/flags/{flag_id}/escalate-csam';
+};
+
+export type EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostError = EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors[keyof EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors];
+
+export type EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: CsamCaseSummary;
+};
+
+export type EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponse = EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses[keyof EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses];
+
 export type ListPatternsEndpointModerationChatSafetyPatternsGetData = {
     body?: never;
     headers?: {
@@ -618,6 +750,203 @@ export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersi
 };
 
 export type RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse = RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses[keyof RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses];
+
+export type ListCasesEndpointModerationCsamCasesGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Csam-Secret
+         */
+        'x-csam-secret'?: string;
+        /**
+         * X-Actor
+         */
+        'x-actor'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/moderation/csam/cases';
+};
+
+export type ListCasesEndpointModerationCsamCasesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCasesEndpointModerationCsamCasesGetError = ListCasesEndpointModerationCsamCasesGetErrors[keyof ListCasesEndpointModerationCsamCasesGetErrors];
+
+export type ListCasesEndpointModerationCsamCasesGetResponses = {
+    /**
+     * Response List Cases Endpoint Moderation Csam Cases Get
+     *
+     * Successful Response
+     */
+    200: Array<CsamCaseSummary>;
+};
+
+export type ListCasesEndpointModerationCsamCasesGetResponse = ListCasesEndpointModerationCsamCasesGetResponses[keyof ListCasesEndpointModerationCsamCasesGetResponses];
+
+export type GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * X-Csam-Secret
+         */
+        'x-csam-secret'?: string;
+        /**
+         * X-Actor
+         */
+        'x-actor'?: string;
+    };
+    path: {
+        /**
+         * Case Id
+         */
+        case_id: string;
+    };
+    query?: never;
+    url: '/moderation/csam/cases/{case_id}/evidence';
+};
+
+export type GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetError = GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors[keyof GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors];
+
+export type GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: CsamEvidence;
+};
+
+export type GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponse = GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses[keyof GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses];
+
+export type MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData = {
+    body: MarkReportedBody;
+    headers?: {
+        /**
+         * X-Csam-Secret
+         */
+        'x-csam-secret'?: string;
+        /**
+         * X-Actor
+         */
+        'x-actor'?: string;
+    };
+    path: {
+        /**
+         * Case Id
+         */
+        case_id: string;
+    };
+    query?: never;
+    url: '/moderation/csam/cases/{case_id}/reported';
+};
+
+export type MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MarkReportedEndpointModerationCsamCasesCaseIdReportedPostError = MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors[keyof MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors];
+
+export type MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: CsamCaseSummary;
+};
+
+export type MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponse = MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses[keyof MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses];
+
+export type DismissEndpointModerationCsamCasesCaseIdDismissPostData = {
+    body: DismissBody;
+    headers?: {
+        /**
+         * X-Csam-Secret
+         */
+        'x-csam-secret'?: string;
+        /**
+         * X-Actor
+         */
+        'x-actor'?: string;
+    };
+    path: {
+        /**
+         * Case Id
+         */
+        case_id: string;
+    };
+    query?: never;
+    url: '/moderation/csam/cases/{case_id}/dismiss';
+};
+
+export type DismissEndpointModerationCsamCasesCaseIdDismissPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DismissEndpointModerationCsamCasesCaseIdDismissPostError = DismissEndpointModerationCsamCasesCaseIdDismissPostErrors[keyof DismissEndpointModerationCsamCasesCaseIdDismissPostErrors];
+
+export type DismissEndpointModerationCsamCasesCaseIdDismissPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: CsamCaseSummary;
+};
+
+export type DismissEndpointModerationCsamCasesCaseIdDismissPostResponse = DismissEndpointModerationCsamCasesCaseIdDismissPostResponses[keyof DismissEndpointModerationCsamCasesCaseIdDismissPostResponses];
+
+export type LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData = {
+    body: LegalHoldBody;
+    headers?: {
+        /**
+         * X-Csam-Secret
+         */
+        'x-csam-secret'?: string;
+        /**
+         * X-Actor
+         */
+        'x-actor'?: string;
+    };
+    path: {
+        /**
+         * Case Id
+         */
+        case_id: string;
+    };
+    query?: never;
+    url: '/moderation/csam/cases/{case_id}/legal-hold';
+};
+
+export type LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutError = LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors[keyof LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors];
+
+export type LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: CsamCaseSummary;
+};
+
+export type LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponse = LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses[keyof LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses];
 
 export type StartVerificationEndpointVerifyStartPostData = {
     body: StartVerificationBody;

@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { blockEndpointBlockPost, diditWebhookEndpointVerifyWebhookPost, getFlagEndpointModerationChatSafetyFlagsFlagIdGet, healthHealthGet, listFlagsEndpointModerationChatSafetyFlagsGet, listPatternsEndpointModerationChatSafetyPatternsGet, logoutEndpointAuthLogoutPost, type Options, reportEndpointReportPost, requestLinkEndpointAuthRequestLinkPost, rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost, startVerificationEndpointVerifyStartPost, upsertPatternEndpointModerationChatSafetyPatternsPut, verificationStatusEndpointVerifyStatusGet, verifyEndpointAuthVerifyPost } from '../sdk.gen';
-import type { BlockEndpointBlockPostData, BlockEndpointBlockPostError, BlockEndpointBlockPostResponse, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponse, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetError, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetError, ListFlagsEndpointModerationChatSafetyFlagsGetResponse, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetError, ListPatternsEndpointModerationChatSafetyPatternsGetResponse, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponse, ReportEndpointReportPostData, ReportEndpointReportPostError, ReportEndpointReportPostResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostError, StartVerificationEndpointVerifyStartPostResponse, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutError, UpsertPatternEndpointModerationChatSafetyPatternsPutResponse, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponse, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostError, VerifyEndpointAuthVerifyPostResponse } from '../types.gen';
+import { blockEndpointBlockPost, diditWebhookEndpointVerifyWebhookPost, dismissEndpointModerationCsamCasesCaseIdDismissPost, escalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPost, getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGet, getFlagEndpointModerationChatSafetyFlagsFlagIdGet, healthHealthGet, legalHoldEndpointModerationCsamCasesCaseIdLegalHoldPut, listCasesEndpointModerationCsamCasesGet, listFlagsEndpointModerationChatSafetyFlagsGet, listPatternsEndpointModerationChatSafetyPatternsGet, logoutEndpointAuthLogoutPost, markReportedEndpointModerationCsamCasesCaseIdReportedPost, type Options, reportEndpointReportPost, requestLinkEndpointAuthRequestLinkPost, rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost, startVerificationEndpointVerifyStartPost, upsertPatternEndpointModerationChatSafetyPatternsPut, verificationStatusEndpointVerifyStatusGet, verifyEndpointAuthVerifyPost } from '../sdk.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostError, BlockEndpointBlockPostResponse, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponse, DismissEndpointModerationCsamCasesCaseIdDismissPostData, DismissEndpointModerationCsamCasesCaseIdDismissPostError, DismissEndpointModerationCsamCasesCaseIdDismissPostResponse, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostError, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponse, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetError, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponse, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetError, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponse, HealthHealthGetData, HealthHealthGetResponse, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutError, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponse, ListCasesEndpointModerationCsamCasesGetData, ListCasesEndpointModerationCsamCasesGetError, ListCasesEndpointModerationCsamCasesGetResponse, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetError, ListFlagsEndpointModerationChatSafetyFlagsGetResponse, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetError, ListPatternsEndpointModerationChatSafetyPatternsGetResponse, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponse, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostError, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponse, ReportEndpointReportPostData, ReportEndpointReportPostError, ReportEndpointReportPostResponse, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostError, RequestLinkEndpointAuthRequestLinkPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostError, StartVerificationEndpointVerifyStartPostResponse, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutError, UpsertPatternEndpointModerationChatSafetyPatternsPutResponse, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponse, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostError, VerifyEndpointAuthVerifyPostResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -178,6 +178,27 @@ export const getFlagEndpointModerationChatSafetyFlagsFlagIdGetOptions = (options
     queryKey: getFlagEndpointModerationChatSafetyFlagsFlagIdGetQueryKey(options)
 });
 
+/**
+ * Escalate Flag To Csam Endpoint
+ *
+ * Moves a flag that indicates CSAM out of the chat-safety queue into
+ * the CSAM case flow (PRD section 9, docs/csam-runbook.md). The sender is the
+ * reported party.
+ */
+export const escalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostMutation = (options?: Partial<Options<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData>>): UseMutationOptions<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponse, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostError, Options<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData>> => {
+    const mutationOptions: UseMutationOptions<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponse, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostError, Options<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await escalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listPatternsEndpointModerationChatSafetyPatternsGetQueryKey = (options?: Options<ListPatternsEndpointModerationChatSafetyPatternsGetData>) => createQueryKey('listPatternsEndpointModerationChatSafetyPatternsGet', options);
 
 /**
@@ -220,6 +241,93 @@ export const rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVers
     const mutationOptions: UseMutationOptions<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponse, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostError, Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listCasesEndpointModerationCsamCasesGetQueryKey = (options?: Options<ListCasesEndpointModerationCsamCasesGetData>) => createQueryKey('listCasesEndpointModerationCsamCasesGet', options);
+
+/**
+ * List Cases Endpoint
+ */
+export const listCasesEndpointModerationCsamCasesGetOptions = (options?: Options<ListCasesEndpointModerationCsamCasesGetData>) => queryOptions<ListCasesEndpointModerationCsamCasesGetResponse, ListCasesEndpointModerationCsamCasesGetError, ListCasesEndpointModerationCsamCasesGetResponse, ReturnType<typeof listCasesEndpointModerationCsamCasesGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listCasesEndpointModerationCsamCasesGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listCasesEndpointModerationCsamCasesGetQueryKey(options)
+});
+
+export const getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetQueryKey = (options: Options<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData>) => createQueryKey('getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGet', options);
+
+/**
+ * Get Evidence Endpoint
+ */
+export const getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetOptions = (options: Options<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData>) => queryOptions<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponse, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetError, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponse, ReturnType<typeof getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGet({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetQueryKey(options)
+});
+
+/**
+ * Mark Reported Endpoint
+ */
+export const markReportedEndpointModerationCsamCasesCaseIdReportedPostMutation = (options?: Partial<Options<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData>>): UseMutationOptions<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponse, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostError, Options<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData>> => {
+    const mutationOptions: UseMutationOptions<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponse, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostError, Options<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markReportedEndpointModerationCsamCasesCaseIdReportedPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Dismiss Endpoint
+ */
+export const dismissEndpointModerationCsamCasesCaseIdDismissPostMutation = (options?: Partial<Options<DismissEndpointModerationCsamCasesCaseIdDismissPostData>>): UseMutationOptions<DismissEndpointModerationCsamCasesCaseIdDismissPostResponse, DismissEndpointModerationCsamCasesCaseIdDismissPostError, Options<DismissEndpointModerationCsamCasesCaseIdDismissPostData>> => {
+    const mutationOptions: UseMutationOptions<DismissEndpointModerationCsamCasesCaseIdDismissPostResponse, DismissEndpointModerationCsamCasesCaseIdDismissPostError, Options<DismissEndpointModerationCsamCasesCaseIdDismissPostData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await dismissEndpointModerationCsamCasesCaseIdDismissPost({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Legal Hold Endpoint
+ */
+export const legalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutMutation = (options?: Partial<Options<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData>>): UseMutationOptions<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponse, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutError, Options<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData>> => {
+    const mutationOptions: UseMutationOptions<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponse, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutError, Options<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await legalHoldEndpointModerationCsamCasesCaseIdLegalHoldPut({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

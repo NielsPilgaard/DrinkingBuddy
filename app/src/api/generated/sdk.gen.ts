@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { BlockEndpointBlockPostData, BlockEndpointBlockPostErrors, BlockEndpointBlockPostResponses, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, HealthHealthGetData, HealthHealthGetResponses, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetErrors, ListFlagsEndpointModerationChatSafetyFlagsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ListPatternsEndpointModerationChatSafetyPatternsGetResponses, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponses, ReportEndpointReportPostData, ReportEndpointReportPostErrors, ReportEndpointReportPostResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostErrors, StartVerificationEndpointVerifyStartPostResponses, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutErrors, UpsertPatternEndpointModerationChatSafetyPatternsPutResponses, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponses, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostErrors, VerifyEndpointAuthVerifyPostResponses } from './types.gen';
+import type { BlockEndpointBlockPostData, BlockEndpointBlockPostErrors, BlockEndpointBlockPostResponses, DiditWebhookEndpointVerifyWebhookPostData, DiditWebhookEndpointVerifyWebhookPostResponses, DismissEndpointModerationCsamCasesCaseIdDismissPostData, DismissEndpointModerationCsamCasesCaseIdDismissPostErrors, DismissEndpointModerationCsamCasesCaseIdDismissPostResponses, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, HealthHealthGetData, HealthHealthGetResponses, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses, ListCasesEndpointModerationCsamCasesGetData, ListCasesEndpointModerationCsamCasesGetErrors, ListCasesEndpointModerationCsamCasesGetResponses, ListFlagsEndpointModerationChatSafetyFlagsGetData, ListFlagsEndpointModerationChatSafetyFlagsGetErrors, ListFlagsEndpointModerationChatSafetyFlagsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetData, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ListPatternsEndpointModerationChatSafetyPatternsGetResponses, LogoutEndpointAuthLogoutPostData, LogoutEndpointAuthLogoutPostResponses, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses, ReportEndpointReportPostData, ReportEndpointReportPostErrors, ReportEndpointReportPostResponses, RequestLinkEndpointAuthRequestLinkPostData, RequestLinkEndpointAuthRequestLinkPostErrors, RequestLinkEndpointAuthRequestLinkPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, StartVerificationEndpointVerifyStartPostData, StartVerificationEndpointVerifyStartPostErrors, StartVerificationEndpointVerifyStartPostResponses, UpsertPatternEndpointModerationChatSafetyPatternsPutData, UpsertPatternEndpointModerationChatSafetyPatternsPutErrors, UpsertPatternEndpointModerationChatSafetyPatternsPutResponses, VerificationStatusEndpointVerifyStatusGetData, VerificationStatusEndpointVerifyStatusGetResponses, VerifyEndpointAuthVerifyPostData, VerifyEndpointAuthVerifyPostErrors, VerifyEndpointAuthVerifyPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -93,6 +93,15 @@ export const listFlagsEndpointModerationChatSafetyFlagsGet = <ThrowOnError exten
 export const getFlagEndpointModerationChatSafetyFlagsFlagIdGet = <ThrowOnError extends boolean = false>(options: Options<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetData, ThrowOnError>): RequestResult<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, ThrowOnError> => (options.client ?? client).get<GetFlagEndpointModerationChatSafetyFlagsFlagIdGetResponses, GetFlagEndpointModerationChatSafetyFlagsFlagIdGetErrors, ThrowOnError>({ url: '/moderation/chat-safety/flags/{flag_id}', ...options });
 
 /**
+ * Escalate Flag To Csam Endpoint
+ *
+ * Moves a flag that indicates CSAM out of the chat-safety queue into
+ * the CSAM case flow (PRD section 9, docs/csam-runbook.md). The sender is the
+ * reported party.
+ */
+export const escalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPost = <ThrowOnError extends boolean = false>(options: Options<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostData, ThrowOnError>): RequestResult<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors, ThrowOnError> => (options.client ?? client).post<EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostResponses, EscalateFlagToCsamEndpointModerationChatSafetyFlagsFlagIdEscalateCsamPostErrors, ThrowOnError>({ url: '/moderation/chat-safety/flags/{flag_id}/escalate-csam', ...options });
+
+/**
  * List Patterns Endpoint
  */
 export const listPatternsEndpointModerationChatSafetyPatternsGet = <ThrowOnError extends boolean = false>(options?: Options<ListPatternsEndpointModerationChatSafetyPatternsGetData, ThrowOnError>): RequestResult<ListPatternsEndpointModerationChatSafetyPatternsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ThrowOnError> => (options?.client ?? client).get<ListPatternsEndpointModerationChatSafetyPatternsGetResponses, ListPatternsEndpointModerationChatSafetyPatternsGetErrors, ThrowOnError>({ url: '/moderation/chat-safety/patterns', ...options });
@@ -113,6 +122,52 @@ export const upsertPatternEndpointModerationChatSafetyPatternsPut = <ThrowOnErro
  * Rollback Pattern Endpoint
  */
 export const rollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPost = <ThrowOnError extends boolean = false>(options: Options<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostData, ThrowOnError>): RequestResult<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, ThrowOnError> => (options.client ?? client).post<RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostResponses, RollbackPatternEndpointModerationChatSafetyPatternsSlugRollbackVersionPostErrors, ThrowOnError>({ url: '/moderation/chat-safety/patterns/{slug}/rollback/{version}', ...options });
+
+/**
+ * List Cases Endpoint
+ */
+export const listCasesEndpointModerationCsamCasesGet = <ThrowOnError extends boolean = false>(options?: Options<ListCasesEndpointModerationCsamCasesGetData, ThrowOnError>): RequestResult<ListCasesEndpointModerationCsamCasesGetResponses, ListCasesEndpointModerationCsamCasesGetErrors, ThrowOnError> => (options?.client ?? client).get<ListCasesEndpointModerationCsamCasesGetResponses, ListCasesEndpointModerationCsamCasesGetErrors, ThrowOnError>({ url: '/moderation/csam/cases', ...options });
+
+/**
+ * Get Evidence Endpoint
+ */
+export const getEvidenceEndpointModerationCsamCasesCaseIdEvidenceGet = <ThrowOnError extends boolean = false>(options: Options<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetData, ThrowOnError>): RequestResult<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors, ThrowOnError> => (options.client ?? client).get<GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetResponses, GetEvidenceEndpointModerationCsamCasesCaseIdEvidenceGetErrors, ThrowOnError>({ url: '/moderation/csam/cases/{case_id}/evidence', ...options });
+
+/**
+ * Mark Reported Endpoint
+ */
+export const markReportedEndpointModerationCsamCasesCaseIdReportedPost = <ThrowOnError extends boolean = false>(options: Options<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostData, ThrowOnError>): RequestResult<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors, ThrowOnError> => (options.client ?? client).post<MarkReportedEndpointModerationCsamCasesCaseIdReportedPostResponses, MarkReportedEndpointModerationCsamCasesCaseIdReportedPostErrors, ThrowOnError>({
+    url: '/moderation/csam/cases/{case_id}/reported',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Dismiss Endpoint
+ */
+export const dismissEndpointModerationCsamCasesCaseIdDismissPost = <ThrowOnError extends boolean = false>(options: Options<DismissEndpointModerationCsamCasesCaseIdDismissPostData, ThrowOnError>): RequestResult<DismissEndpointModerationCsamCasesCaseIdDismissPostResponses, DismissEndpointModerationCsamCasesCaseIdDismissPostErrors, ThrowOnError> => (options.client ?? client).post<DismissEndpointModerationCsamCasesCaseIdDismissPostResponses, DismissEndpointModerationCsamCasesCaseIdDismissPostErrors, ThrowOnError>({
+    url: '/moderation/csam/cases/{case_id}/dismiss',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Legal Hold Endpoint
+ */
+export const legalHoldEndpointModerationCsamCasesCaseIdLegalHoldPut = <ThrowOnError extends boolean = false>(options: Options<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutData, ThrowOnError>): RequestResult<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors, ThrowOnError> => (options.client ?? client).put<LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutResponses, LegalHoldEndpointModerationCsamCasesCaseIdLegalHoldPutErrors, ThrowOnError>({
+    url: '/moderation/csam/cases/{case_id}/legal-hold',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Start Verification Endpoint
