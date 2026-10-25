@@ -20,8 +20,11 @@ from app.chat_safety.service import (
     upsert_pattern,
 )
 from app.config import settings
+from app.csam.schemas import CsamCaseSummary
+from app.csam.service import open_case
 from app.db import get_db
 from app.models.chat_safety import FlaggedMessage
+from app.models.csam import CsamCase
 
 router = APIRouter(prefix="/moderation/chat-safety", tags=["moderation"])
 
@@ -75,6 +78,31 @@ async def get_flag_endpoint(
         created_at=flag.created_at,
         text=text,
     )
+
+
+@router.post("/flags/{flag_id}/escalate-csam", response_model=CsamCaseSummary)
+async def escalate_flag_to_csam_endpoint(
+    flag_id: uuid.UUID,
+    actor: str = _moderator_dependency,
+    db: AsyncSession = _db_dependency,
+) -> CsamCase:
+    """Moves a flag that indicates CSAM out of the chat-safety queue into
+    the CSAM case flow (PRD section 9, docs/csam-runbook.md). The sender is the
+    reported party."""
+    flag = await db.get(FlaggedMessage, flag_id)
+    if flag is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flag not found")
+
+    case = await open_case(
+        db,
+        source="chat_flag",
+        reported_id=flag.sender_id,
+        call_session_id=flag.call_session_id,
+        actor=actor,
+    )
+    await log_audit(db, action="escalate_csam", actor=actor, detail=str(flag_id))
+    await db.refresh(case)
+    return case
 
 
 @router.get("/patterns", response_model=list[PatternRuleOut])

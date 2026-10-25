@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.csam.service import CSAM_REPORT_REASON, open_case
 from app.models.block import Block
 from app.models.report import Report
 from app.models.suspension import Suspension
@@ -55,6 +56,15 @@ async def submit_report(
     if recent_report_count >= settings.report_auto_suspend_threshold:
         if not await is_suspended(db, reported_id):
             await _suspend(db, reported_id)
+
+    if reason == CSAM_REPORT_REASON:
+        await open_case(
+            db,
+            source="user_report",
+            reported_id=reported_id,
+            call_session_id=call_session_id,
+            actor=f"user:{reporter_id}",
+        )
 
     await db.commit()
 

@@ -58,3 +58,25 @@ def send_verification_waitlist_welcome_back_email(to_email: str) -> None:
         if settings.smtp_user:
             smtp.login(settings.smtp_user, settings.smtp_password)
         smtp.send_message(message)
+
+
+def send_csam_case_opened_email(to_email: str, case_id: str, source: str) -> None:
+    # Case id only - never evidence, never user identifiers. Email is not an
+    # access-controlled channel (docs/csam-runbook.md).
+    message = EmailMessage()
+    message["Subject"] = "URGENT: CSAM-suspected case opened"
+    message["From"] = settings.email_from
+    message["To"] = to_email
+    message.set_content(
+        f"A CSAM-suspected case was opened (source: {source}).\n\n"
+        f"Case id: {case_id}\n\n"
+        "Follow docs/csam-runbook.md. Triage within 24 hours. Do not forward this "
+        "email or discuss case details outside the authorized set."
+    )
+
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
+        if settings.smtp_use_tls:
+            smtp.starttls(context=ssl.create_default_context())
+        if settings.smtp_user:
+            smtp.login(settings.smtp_user, settings.smtp_password)
+        smtp.send_message(message)

@@ -3,7 +3,9 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-ReportReason = Literal["nudity", "harassment", "underage", "spam", "other"]
+# "csam" = sexual content involving a minor. Routes to app/csam (separate
+# legal duty, docs/csam-runbook.md) in addition to the generic breaker.
+ReportReason = Literal["nudity", "harassment", "underage", "csam", "spam", "other"]
 
 
 class ReportBody(BaseModel):

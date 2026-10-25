@@ -5,6 +5,7 @@ from app.routers import (
     app_links,
     auth,
     chat_safety,
+    csam,
     health,
     matching,
     moderation,
@@ -27,5 +28,6 @@ app.include_router(matching.router)
 app.include_router(signaling.router)
 app.include_router(moderation.router)
 app.include_router(chat_safety.router)
+app.include_router(csam.router)
 app.include_router(verify.router)
 app.include_router(app_links.router)

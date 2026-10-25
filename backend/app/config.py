@@ -60,6 +60,16 @@ class Settings(BaseSettings):
     chat_safety_moderation_secret: str = "changeme"
     chat_safety_oncall_email: str = "moderation-oncall@drinkingbuddy.local"
 
+    # CSAM-suspected cases (tasks/11-csam-reporting.md, docs/csam-runbook.md).
+    # Separate key + secret from chat safety so the authorized set stays
+    # narrower than general moderation. Retention is a placeholder until
+    # counsel sets the legally-required minimum.
+    csam_evidence_encryption_key: str = "aBsi6dGJr72_y8oNjBLiRwmeMQreG5x3Vlwu605zTRM="
+    csam_evidence_retention_days: int = 90
+    csam_moderation_secret: str = "changeme"
+    csam_oncall_email: str = "csam-oncall@drinkingbuddy.local"
+    csam_suspension_hours: int = 720
+
     # When environment == "development", /auth/request-link echoes the
     # magic-link token back in the response (if the caller also sends
     # X-Test-Mode: 1), so E2E clients (Maestro) can complete sign-in without
@@ -80,18 +90,32 @@ if settings.environment != "development" and settings.chat_safety_moderation_sec
         "environments"
     )
 
-if settings.environment != "development":
+if settings.environment != "development" and settings.csam_moderation_secret == "changeme":
+    raise RuntimeError(
+        "csam_moderation_secret must be set to a real secret outside development environments"
+    )
+
+
+def _require_real_fernet_key(name: str, value: str, dev_default: str) -> None:
     try:
-        Fernet(settings.chat_safety_flag_encryption_key)
+        Fernet(value)
         valid_key = True
     except ValueError:
         valid_key = False
-    if (
-        not valid_key
-        or settings.chat_safety_flag_encryption_key
-        == "CQ02dBuJfDFA30Yq9q3kdyoaC9YGYbZsDzWxi8Qects="
-    ):
+    if not valid_key or value == dev_default:
         raise RuntimeError(
-            "chat_safety_flag_encryption_key must be set to a real Fernet key outside "
-            "development environments"
+            f"{name} must be set to a real Fernet key outside development environments"
         )
+
+
+if settings.environment != "development":
+    _require_real_fernet_key(
+        "chat_safety_flag_encryption_key",
+        settings.chat_safety_flag_encryption_key,
+        "CQ02dBuJfDFA30Yq9q3kdyoaC9YGYbZsDzWxi8Qects=",
+    )
+    _require_real_fernet_key(
+        "csam_evidence_encryption_key",
+        settings.csam_evidence_encryption_key,
+        "aBsi6dGJr72_y8oNjBLiRwmeMQreG5x3Vlwu605zTRM=",
+    )

@@ -22,6 +22,22 @@ Needs to exist before task 07 (AI nudity detection) ships to any real traffic, s
 - Distinguish "CSAM suspected" from generic nudity-report categories in the report/flag data model (task 06's `reports` table or a new flag) — needs its own escalation path, not lumped into the standard 3-reports-in-24h auto-suspend flow.
 - Evidence retention: minimal, time-boxed, access-controlled storage for what's legally required to preserve — not indefinite, not broadly accessible. Concretely: encrypted at rest and in transit; access restricted to the narrow authorized set defined in the runbook's do-not-locally-view policy; all access logged/audited; explicit retention window with a deletion deadline (per counsel's legally-required minimum, not indefinite); legal-hold override that pauses scheduled deletion only while a hold is active and resumes normal deletion once lifted.
 
+## Progress
+
+Repo side done (2026-10-24). Left: human/legal work below.
+
+- Runbook drafted: [`docs/csam-runbook.md`](../docs/csam-runbook.md). Covers triggers, authorized set, do-not-view policy, escalation steps, where to report, retention, and the candidate legal regimes plus US-nexus inventory.
+- Report reason `csam` ("Sexual content involving a minor") opens a `csam_cases` row with an encrypted evidence snapshot and a precautionary suspension (`CSAM_SUSPENSION_HOURS`), and emails `CSAM_ONCALL_EMAIL` the case id. The report still counts toward task 06's breaker.
+- Chat-safety moderators can escalate a flag: `POST /moderation/chat-safety/flags/{id}/escalate-csam`.
+- `/moderation/csam/*` uses its own secret plus `X-Actor`, and every action goes to `csam_audit_log`. Supports report (sets legal hold), dismiss (lifts suspension) and legal hold on/off.
+- Retention: `purge_expired_cases` deletes after `CSAM_EVIDENCE_RETENTION_DAYS` unless a hold is on.
+- App: new reason in the report sheet, with a "don't screenshot or record" hint.
+
+**Still open (human):**
+- Counsel reviews runbook §7 and answers §9. Then fix the retention days, the suspension length and the reporting channel, and drop "draft".
+- Fill in the names in runbook §3. Set the `CSAM_*` secrets in prod env.
+- Schedule `purge_expired_cases` daily at deploy (no scheduler exists yet; same gap as the chat-safety sweep). Task 05.
+
 ## Explicitly out of scope
 
 - Full CSAM-grade automated detection pipeline — that's task 07's concern (nudity/inappropriate-content detection generally); this task is the reporting/response duty once something is flagged, by any means.
